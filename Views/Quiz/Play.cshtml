@@ -1,0 +1,182 @@
+﻿@model List<WEBCOMIC_FINALPROJECT_.Models.QuizViewModel>
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
+
+@{
+    var tokens = Antiforgery.GetAndStoreTokens(Context);
+}
+
+<style>
+    @@keyframes shake {
+        0%, 100% {
+            transform: translateX(0);
+        }
+
+        25% {
+            transform: translateX(-10px);
+        }
+
+        75% {
+            transform: translateX(10px);
+        }
+    }
+
+    @@keyframes pulse {
+        0% {
+            transform: scale(1);
+        }
+
+        50% {
+            transform: scale(1.08);
+        }
+
+        100% {
+            transform: scale(1);
+        }
+    }
+
+    .option-btn {
+        transition: all 0.2s;
+        border: 2px solid #dee2e6;
+    }
+
+        .option-btn.correct {
+            background-color: #27ae60 !important;
+            border-color: #2ecc71 !important;
+            color: white !important;
+            animation: pulse 0.5s;
+        }
+
+        .option-btn.wrong {
+            background-color: #c0392b !important;
+            border-color: #e74c3c !important;
+            color: white !important;
+            animation: shake 0.4s;
+        }
+</style>
+
+<div class="card shadow mt-4 border-0">
+    <div class="card-body p-4">
+        <div id="game-area">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h4 id="question-header" class="fw-bold text-dark">Câu hỏi 1/10</h4>
+                <span id="score-badge" class="badge bg-primary rounded-pill px-3">Đúng: 0</span>
+            </div>
+
+            <div class="progress mb-4" style="height: 12px;">
+                <div id="progress-bar" class="progress-bar bg-danger progress-bar-striped progress-bar-animated" style="width: 10%"></div>
+            </div>
+
+            <div class="text-center mb-4">
+                <img id="manga-img" src="" class="img-thumbnail shadow-sm" style="height: 350px; width: auto; object-fit: contain; border-radius: 15px; background-color: #f8f9fa;">
+            </div>
+
+            <div id="options-container" class="row g-3"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+
+    const questions = @Html.Raw(Json.Serialize(Model));
+
+    let currentIdx = 0;
+    let score = 0;
+
+    function renderQuestion() {
+        if (currentIdx >= questions.length) {
+            finishGame();
+            return;
+        }
+
+        const q = questions[currentIdx];
+        document.getElementById("question-header").innerText = "Câu hỏi " + (currentIdx + 1) + "/" + questions.length;
+        document.getElementById("progress-bar").style.width = ((currentIdx + 1) / questions.length * 100) + "%";
+        document.getElementById("manga-img").src = q.imageUrl;
+
+        const container = document.getElementById("options-container");
+        container.innerHTML = "";
+
+        q.options.forEach(opt => {
+            const btn = document.createElement("button");
+            btn.className = "btn btn-outline-dark col-12 py-3 option-btn fw-bold shadow-sm";
+            btn.innerText = opt;
+
+            btn.onclick = function() {
+                const allBtns = container.querySelectorAll('button');
+                allBtns.forEach(function(b) { b.disabled = true; });
+                checkAnswer(opt, q.correctTitle, btn);
+            };
+            container.appendChild(btn);
+        });
+    }
+
+    function checkAnswer(selected, correct, btnElement) {
+        if (selected === correct) {
+            btnElement.classList.add("correct");
+            score++;
+            document.getElementById("score-badge").innerText = "Đúng: " + score;
+        } else {
+            btnElement.classList.add("wrong");
+            const buttons = document.querySelectorAll('.option-btn');
+            buttons.forEach(function(b) {
+                if(b.innerText === correct) b.classList.add("correct");
+            });
+        }
+
+        setTimeout(function() {
+            currentIdx++;
+            renderQuestion();
+        }, 1000);
+    }
+
+    async function finishGame() {
+        // We avoid template literals with ${} here just in case Razor tries to parse them
+        document.getElementById("game-area").innerHTML =
+            "<div class='text-center py-5'>" +
+                "<div class='spinner-border text-danger' role='status'></div>" +
+                "<h3 class='mt-3'>Đang tổng kết kết quả...</h3>" +
+            "</div>";
+
+        try {
+            const response = await fetch('/Quiz/SubmitResult?score=' + score, {
+                method: 'POST',
+                headers: {
+                    'RequestVerificationToken': '@tokens.RequestToken'
+                }
+            });
+
+            const data = await response.json();
+
+            if (score === 10) {
+                animatePoints();
+                setTimeout(function() {
+                    alert("Tuyệt vời! Bạn đúng 10/10. " + data.message);
+                    window.location.href = "/";
+                }, 1500);
+            } else {
+                alert("Bạn đúng " + score + "/10. " + data.message);
+                window.location.href = "/Quiz";
+            }
+        } catch (err) {
+            console.error(err);
+            alert("Có lỗi xảy ra khi lưu kết quả.");
+        }
+    }
+
+    function animatePoints() {
+        const pointElement = document.createElement("div");
+        pointElement.innerHTML = "⭐ +1 Điểm Thưởng";
+        pointElement.setAttribute("style", "position:fixed; left:50%; top:50%; transform:translate(-50%, -50%); color:#f1c40f; font-size:3.5rem; font-weight:bold; z-index:10000; text-shadow:2px 4px 8px rgba(0,0,0,0.3); transition:all 1.2s cubic-bezier(0.25, 0.1, 0.25, 1); pointer-events:none;");
+
+        document.body.appendChild(pointElement);
+
+        setTimeout(function() {
+            pointElement.style.transform = "translate(-50%, -350px)";
+            pointElement.style.opacity = "0";
+        }, 50);
+
+        setTimeout(function() { pointElement.remove(); }, 1300);
+    }
+
+    document.addEventListener("DOMContentLoaded", renderQuestion);
+</script>

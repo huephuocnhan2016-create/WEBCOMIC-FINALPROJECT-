@@ -1,0 +1,37 @@
+﻿<div class="container text-center mt-5">
+    <div class="card shadow-lg p-5">
+        <h2 class="text-primary"><i class="bi bi-controller"></i> Thử Thách Daily Quiz</h2>
+        <p class="lead">Trả lời đúng 10 câu hỏi liên tiếp để nhận 1 điểm tích lũy đổi VIP!</p>
+
+        <div class="alert alert-info">
+            <strong>Luật chơi:</strong> Hệ thống sẽ đưa ra 1 hình ảnh từ một bộ truyện. Bạn phải chọn đúng tên truyện trong 4 lựa chọn.
+        </div>
+
+        <button type="button" class="btn btn-success btn-lg" data-bs-toggle="modal" data-bs-target="#startModal">
+            Bắt đầu chơi ngay
+        </button>
+    </div>
+</div>
+
+<div class="modal fade" id="startModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form asp-action="StartGame" method="post" class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Chọn thể loại sở trường</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <select name="genreId" class="form-select" required>
+                    <option value="">-- Chọn thể loại --</option>
+                    @foreach (var item in (IEnumerable<Genre>)ViewBag.Genres)
+                    {
+                        <option value="@item.Id">@item.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-primary w-100">Xác nhận chơi</button>
+            </div>
+        </form>
+    </div>
+</div>

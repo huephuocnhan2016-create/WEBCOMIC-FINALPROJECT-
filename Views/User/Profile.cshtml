@@ -1,0 +1,44 @@
+﻿@model ApplicationUser
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card text-center p-3">
+                <h4>@Model.UserName</h4>
+                <p class="badge bg-warning text-dark">Điểm tích lũy: @Model.RewardPoints</p>
+                <hr>
+                @if (Model.IsVip && Model.VipExpiryDate > DateTime.Now)
+                {
+                    <div class="alert alert-success">
+                        Trạng thái: <strong>THÀNH VIÊN VIP</strong><br>
+                        Hết hạn: @Model.VipExpiryDate?.ToString("dd/MM/yyyy HH:mm")
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-secondary">Trạng thái: Thành viên thường</div>
+                }
+            </div>
+        </div>
+        <div class="col-md-8">
+            <div class="card p-4 shadow-sm">
+                <h3>Đổi VIP 1 Tuần</h3>
+                <p>Chi phí: <strong>@ViewBag.PointsToVip điểm</strong></p>
+
+                @if (TempData["Success"] != null)
+                {
+                    <div class="alert alert-success">@TempData["Success"]</div>
+                }
+                @if (TempData["Error"] != null)
+                {
+                    <div class="alert alert-danger">@TempData["Error"]</div>
+                }
+
+                <form asp-action="RedeemVip" method="post">
+                    <button type="submit" class="btn btn-primary btn-lg @(Model.RewardPoints < ViewBag.PointsToVip ? "disabled" : "")">
+                        Xác nhận đổi 1 tuần VIP
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

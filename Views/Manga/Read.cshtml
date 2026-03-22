@@ -1,0 +1,35 @@
+﻿@model Chapter
+<div class="reader-container bg-dark text-white p-3">
+    <div class="reader-header d-flex justify-content-between mb-3">
+        <h4>@Model.Manga.Title - @Model.Name</h4>
+        <select onchange="location = this.value;" class="form-select w-auto">
+            @foreach (var ch in ViewBag.AllChapters)
+            {
+                <option value="/Manga/Read/@ch.Id" selected="@(ch.Id == Model.Id)">@ch.Name</option>
+            }
+        </select>
+    </div>
+
+    <div class="manga-images text-center">
+        @foreach (var img in Model.Images.OrderBy(x => x.Order))
+        {
+            <img src="@img.Url" class="img-fluid mb-2 shadow-lg" loading="lazy" style="max-width: 800px;">
+        }
+    </div>
+
+    <div class="reader-footer mt-4 text-center">
+        <a href="@Url.Action("Read", new { id = ViewBag.PrevId })" class="btn btn-secondary @(ViewBag.PrevId == null ? "disabled" : "")">Chương trước</a>
+        <a href="@Url.Action("Read", new { id = ViewBag.NextId })" class="btn btn-primary @(ViewBag.NextId == null ? "disabled" : "")">Chương sau</a>
+    </div>
+</div>
+
+<style>
+    .reader-container {
+        min-height: 100vh;
+    }
+
+    body {
+        background-color: #1a1a1a;
+    }
+    /* Chế độ tối khi đọc */
+</style>

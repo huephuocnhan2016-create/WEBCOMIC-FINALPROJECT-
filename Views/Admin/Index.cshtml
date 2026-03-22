@@ -1,0 +1,45 @@
+﻿@model IEnumerable<WEBCOMIC_FINALPROJECT_.Models.ApplicationUser>
+
+<div class="container mt-4">
+    <h2 class="text-white bg-danger p-3 rounded shadow-sm"><i class="bi bi-people-fill"></i> Quản Lý Thành Viên</h2>
+
+    <div class="card bg-dark text-white border-secondary mt-3">
+        <div class="table-responsive">
+            <table class="table table-dark table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Email / Username</th>
+                        <th>Điểm Thưởng</th>
+                        <th>Quyền Hiện Tại</th>
+                        <th>Thay Đổi Quyền</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in Model)
+                    {
+                        <tr>
+                            <td>@user.Email</td>
+                            <td><span class="badge bg-info">@user.RewardPoints</span></td>
+                            <td>
+                                @* Ở đây bạn có thể dùng inject RoleManager để lấy tên Role chính xác *@
+                                <span class="text-warning">User ID: @user.Id.Substring(0, 8)...</span>
+                            </td>
+                            <td>
+                                <form asp-action="ChangeRole" method="post" class="d-flex gap-2">
+                                    <input type="hidden" name="userId" value="@user.Id" />
+                                    <select name="roleName" class="form-select form-select-sm bg-secondary text-white border-0">
+                                        <option value="Member">Member</option>
+                                        <option value="Author">Author</option>
+                                        <option value="Moderator">Moderator</option>
+                                        <option value="Admin">Admin</option>
+                                    </select>
+                                    <button type="submit" class="btn btn-sm btn-primary">Lưu</button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
