@@ -27,7 +27,8 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options => {
 })
 .AddEntityFrameworkStores<ApplicationDbContext>()
 .AddDefaultTokenProviders()
-.AddDefaultUI(); // Cần thiết để Identity Razor Pages (Login/Register) hoạt động
+.AddDefaultUI(); // Cần thiết để Identity Razor Pages (
+                 // /Register) hoạt động
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();

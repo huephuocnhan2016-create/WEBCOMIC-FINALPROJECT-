@@ -1,0 +1,12 @@
+﻿@model WEBCOMIC_FINALPROJECT_.Models.Chapter
+<div class="container mt-4">
+    <h3 class="text-white">Tải ảnh cho: @Model.Title</h3>
+    <form asp-action="UploadImages" method="post" enctype="multipart/form-data">
+        <input type="hidden" name="chapterId" value="@Model.Id" />
+        <div class="mb-3">
+            <input type="file" name="files" class="form-control" multiple required />
+            <small class="text-muted">Bạn có thể chọn nhiều ảnh cùng lúc.</small>
+        </div>
+        <button type="submit" class="btn btn-primary">Tải lên tất cả ảnh</button>
+    </form>
+</div>

@@ -81,6 +81,21 @@ namespace WEBCOMIC_FINALPROJECT_.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "UserMangaUnlocks",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    UserId = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    MangaId = table.Column<int>(type: "int", nullable: false),
+                    UnlockDate = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_UserMangaUnlocks", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "AspNetRoleClaims",
                 columns: table => new
                 {
@@ -187,16 +202,37 @@ namespace WEBCOMIC_FINALPROJECT_.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "QuizHistories",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    UserId = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    DatePlayed = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_QuizHistories", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_QuizHistories_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Mangas",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     Title = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     ImageUrl = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     GenreId = table.Column<int>(type: "int", nullable: false),
                     IsApproved = table.Column<bool>(type: "bit", nullable: false),
-                    AuthorId = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    AuthorId = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     IsVipOnly = table.Column<bool>(type: "bit", nullable: false)
                 },
                 constraints: table =>
@@ -216,8 +252,10 @@ namespace WEBCOMIC_FINALPROJECT_.Migrations
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    MangaId = table.Column<int>(type: "int", nullable: false)
+                    Title = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    MangaId = table.Column<int>(type: "int", nullable: false),
+                    Content = table.Column<string>(type: "nvarchar(max)", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -304,6 +342,11 @@ namespace WEBCOMIC_FINALPROJECT_.Migrations
                 name: "IX_Mangas_GenreId",
                 table: "Mangas",
                 column: "GenreId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_QuizHistories_UserId",
+                table: "QuizHistories",
+                column: "UserId");
         }
 
         /// <inheritdoc />
@@ -328,16 +371,22 @@ namespace WEBCOMIC_FINALPROJECT_.Migrations
                 name: "MangaImages");
 
             migrationBuilder.DropTable(
+                name: "QuizHistories");
+
+            migrationBuilder.DropTable(
                 name: "SystemConfigs");
+
+            migrationBuilder.DropTable(
+                name: "UserMangaUnlocks");
 
             migrationBuilder.DropTable(
                 name: "AspNetRoles");
 
             migrationBuilder.DropTable(
-                name: "AspNetUsers");
+                name: "Chapters");
 
             migrationBuilder.DropTable(
-                name: "Chapters");
+                name: "AspNetUsers");
 
             migrationBuilder.DropTable(
                 name: "Mangas");

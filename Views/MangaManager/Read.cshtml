@@ -1,0 +1,38 @@
+﻿@model WEBCOMIC_FINALPROJECT_.Models.Chapter
+
+<div class="container mt-4 text-center">
+    <h2 class="text-warning">@Model.Manga.Title - @Model.Title</h2>
+
+    <div class="d-flex justify-content-center gap-3 my-4">
+        @if (ViewBag.PrevId != null)
+        {
+            <a asp-action="Read" asp-route-id="@ViewBag.PrevId" class="btn btn-primary">
+                <i class="bi bi-arrow-left"></i> Chương trước
+            </a>
+        }
+        else
+        {
+            <button class="btn btn-secondary" disabled>Đầu danh sách</button>
+        }
+
+        <a asp-action="Details" asp-route-id="@Model.MangaId" class="btn btn-outline-light">Mục lục</a>
+
+        @if (ViewBag.NextId != null)
+        {
+            <a asp-action="Read" asp-route-id="@ViewBag.NextId" class="btn btn-primary">
+                Chương sau <i class="bi bi-arrow-right"></i>
+            </a>
+        }
+        else
+        {
+            <button class="btn btn-secondary" disabled>Hết chương</button>
+        }
+    </div>
+
+    <div class="manga-content mx-auto" style="max-width: 800px;">
+        @foreach (var img in Model.Images.OrderBy(i => i.Id))
+        {
+            <img src="@img.Url" class="img-fluid w-100 mb-2" alt="page" />
+        }
+    </div>
+</div>

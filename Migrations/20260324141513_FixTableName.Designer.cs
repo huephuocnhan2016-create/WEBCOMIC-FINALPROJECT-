@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using WEBCOMIC_FINALPROJECT_.Data;
 
@@ -11,9 +12,11 @@ using WEBCOMIC_FINALPROJECT_.Data;
 namespace WEBCOMIC_FINALPROJECT_.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260324141513_FixTableName")]
+    partial class FixTableName
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -335,7 +338,7 @@ namespace WEBCOMIC_FINALPROJECT_.Migrations
 
                     b.HasIndex("ChapterId");
 
-                    b.ToTable("Images", (string)null);
+                    b.ToTable("Images");
                 });
 
             modelBuilder.Entity("WEBCOMIC_FINALPROJECT_.Models.QuizHistory", b =>

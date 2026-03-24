@@ -1,22 +1,23 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
-using System.Diagnostics;
-using WEBCOMIC_FINALPROJECT_.Data; // Ensure this is here
+using WEBCOMIC_FINALPROJECT_.Data;
 using WEBCOMIC_FINALPROJECT_.Models;
 
 namespace WEBCOMIC_FINALPROJECT_.Controllers
 {
     public class HomeController : Controller
     {
-        private readonly ILogger<HomeController> _logger;
-        private readonly ApplicationDbContext _context; // Add this
-        private readonly IMemoryCache _cache; // Add this
-
-        // Inject everything through the constructor
-        public HomeController(ILogger<HomeController> logger, ApplicationDbContext context, IMemoryCache cache)
+        private readonly ApplicationDbContext _context;
+        private readonly IMemoryCache _cache;
+        public IActionResult Search(string query)
         {
-            _logger = logger;
+            // Nếu không tìm thấy kết quả hoặc query trống, logic bên Index sẽ xử lý
+            // Chúng ta chỉ cần chuyển hướng tham số 'query' sang tham số 'search' của hàm Index
+            return RedirectToAction("Index", new { search = query });
+        }
+        public HomeController(ApplicationDbContext context, IMemoryCache cache)
+        {
             _context = context;
             _cache = cache;
         }
@@ -26,52 +27,62 @@ namespace WEBCOMIC_FINALPROJECT_.Controllers
             int pageSize = 12;
             const string CacheKey = "LatestMangas";
 
-            // 1. Check Cache ONLY if there is no search query (so users get fresh search results)
-            if (string.IsNullOrEmpty(search) && page == 1)
-            {
-                if (_cache.TryGetValue(CacheKey, out List<Manga> cachedMangas))
-                {
-                    ViewBag.CurrentPage = 1;
-                    ViewBag.TotalPages = 1; // Simplify for cache
-                    return View(cachedMangas);
-                }
-            }
-
-            // 2. Build the Query
-            var query = _context.Mangas.Where(m => m.IsApproved);
-
+            // SỬA LỖI 1: Nếu có tìm kiếm, bỏ qua Cache hoàn toàn để kết quả chính xác
             if (!string.IsNullOrEmpty(search))
             {
-                query = query.Where(m => m.Title.Contains(search));
+                var searchResults = await _context.Mangas
+                    .Include(m => m.Genre)
+                    .Where(m => m.IsApproved && m.Title.Contains(search))
+                    .OrderByDescending(m => m.Id)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync();
+
+                var totalSearch = await _context.Mangas.CountAsync(m => m.IsApproved && m.Title.Contains(search));
+                ViewBag.CurrentPage = page;
+                ViewBag.TotalPages = (int)Math.Ceiling((double)totalSearch / pageSize);
+                ViewBag.Search = search;
+                return View(searchResults);
             }
 
-            // 3. Get Data
-            var totalItems = await query.CountAsync();
-            var mangas = await query
+            // SỬA LỖI 2: Xử lý Cache thông minh hơn cho trang chủ (page 1)
+            if (page == 1)
+            {
+                if (!_cache.TryGetValue(CacheKey, out List<Manga> mangas))
+                {
+                    // Nếu không có cache, lấy từ DB
+                    mangas = await _context.Mangas
+                        .Include(m => m.Genre)
+                        .Where(m => m.IsApproved)
+                        .OrderByDescending(m => m.Id)
+                        .Take(pageSize)
+                        .AsNoTracking()
+                        .ToListAsync();
+
+                    // Lưu cache ngắn thôi (ví dụ 2 phút) để truyện mới mau hiện lên
+                    // Hoặc xóa dòng này nếu bạn muốn truyện hiện ngay lập tức sau khi duyệt
+                    _cache.Set(CacheKey, mangas, TimeSpan.FromMinutes(2));
+                }
+
+                var totalItems = await _context.Mangas.CountAsync(m => m.IsApproved);
+                ViewBag.CurrentPage = 1;
+                ViewBag.TotalPages = (int)Math.Ceiling((double)totalItems / pageSize);
+                return View(mangas);
+            }
+
+            // Xử lý các trang từ 2 trở đi (Không dùng cache để tránh sai lệch dữ liệu)
+            var query = _context.Mangas.Include(m => m.Genre).Where(m => m.IsApproved);
+            var totalCount = await query.CountAsync();
+            var pagedMangas = await query
                 .OrderByDescending(m => m.Id)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
 
-            // 4. Set Cache (optional, only for the first page of results)
-            if (string.IsNullOrEmpty(search) && page == 1)
-            {
-                _cache.Set(CacheKey, mangas, TimeSpan.FromMinutes(10));
-            }
-
             ViewBag.CurrentPage = page;
-            ViewBag.TotalPages = (int)Math.Ceiling((double)totalItems / pageSize);
-            ViewBag.Search = search;
+            ViewBag.TotalPages = (int)Math.Ceiling((double)totalCount / pageSize);
 
-            return View(mangas);
-        }
-
-        public IActionResult Privacy() => View();
-
-        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public IActionResult Error()
-        {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+            return View(pagedMangas);
         }
     }
 }

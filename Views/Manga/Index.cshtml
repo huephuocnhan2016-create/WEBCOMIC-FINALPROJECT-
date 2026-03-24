@@ -10,27 +10,29 @@
 
             @if (ViewBag.IsLocked == true)
             {
-                <div class="alert alert-warning border-warning bg-dark text-warning p-5 text-center mt-4">
+                <div class="alert alert-warning border-warning bg-dark text-warning p-5 text-center mt-4 shadow">
                     <h3><i class="bi bi-lock-fill"></i> NỘI DUNG VIP</h3>
                     <p>Bạn cần <strong>@ViewBag.VipPrice điểm</strong> để mở khóa toàn bộ chương của bộ truyện này.</p>
-                    <p>Số điểm hiện có: <span class="badge bg-danger">@ViewBag.UserPoints</span></p>
+                    <p>Số điểm hiện có: <span class="badge bg-danger fs-5">@ViewBag.UserPoints</span></p>
 
                     <form asp-action="UnlockManga" asp-route-id="@Model.Id" method="post">
-                        <button type="submit" class="btn btn-warning btn-lg fw-bold">
+                        <button type="submit" class="btn btn-warning btn-lg fw-bold px-5">
                             <i class="bi bi-cart-plus"></i> MỞ KHÓA NGAY
                         </button>
                     </form>
-                    <a href="/Quiz" class="d-block mt-3 text-info small">Chơi Quiz để kiếm thêm điểm miễn phí!</a>
+                    <a asp-controller="Quiz" asp-action="Index" class="d-block mt-3 text-info small">Chơi Quiz để kiếm thêm điểm miễn phí!</a>
                 </div>
             }
             else
             {
-                <h4 class="mt-4">Danh sách chương:</h4>
+                <h4 class="mt-4"><i class="bi bi-list-stars"></i> Danh sách chương:</h4>
                 <div class="list-group">
-                    @foreach (var ch in Model.Chapters.OrderBy(c => c.Id))
+                    @foreach (var ch in Model.Chapters.OrderByDescending(c => c.Id))
                     {
-                        <a href="/Manga/Read/@ch.Id" class="list-group-item list-group-item-action bg-dark text-white border-secondary">
-                            @ch.Name <span class="float-end text-muted small">@ch.CreatedAt.ToString("dd/MM/yyyy")</span>
+                        <a asp-controller="Manga" asp-action="Read" asp-route-id="@ch.Id"
+                           class="list-group-item list-group-item-action bg-dark text-white border-secondary d-flex justify-content-between align-items-center">
+                            @ch.Title
+                            <span class="text-muted small">@ch.CreatedAt.ToString("dd/MM/yyyy")</span>
                         </a>
                     }
                 </div>

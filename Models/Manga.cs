@@ -1,15 +1,37 @@
-﻿namespace WEBCOMIC_FINALPROJECT_.Models
+﻿using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
+using System.ComponentModel.DataAnnotations;
+
+namespace WEBCOMIC_FINALPROJECT_.Models
 {
     public class Manga
     {
+        [Key]
         public int Id { get; set; }
+
+        [Required(ErrorMessage = "Vui lòng nhập tên bộ truyện")]
         public string Title { get; set; }
-        public string ImageUrl { get; set; } // Dùng cho Quiz
+
+        // THÊM DÒNG NÀY VÀO ĐỂ HẾT LỖI
+        [Required(ErrorMessage = "Vui lòng nhập mô tả bộ truyện")]
+        public string Description { get; set; }
+
+        [Required(ErrorMessage = "Vui lòng nhập URL ảnh bìa")]
+        public string ImageUrl { get; set; }
+
+        [Required(ErrorMessage = "Vui lòng chọn thể loại")]
         public int GenreId { get; set; }
-        public Genre Genre { get; set; }
-        public bool IsApproved { get; set; } // Quản trị viên duyệt
-        public string AuthorId { get; set; } // Link tới User là Tác giả
-        public bool IsVipOnly { get; set; }
+
+        [ValidateNever]
+        public virtual Genre? Genre { get; set; }
+
+        public bool IsApproved { get; set; } = false;
+
+        [ValidateNever]
+        public string? AuthorId { get; set; }
+
+        public bool IsVipOnly { get; set; } = false;
+
+        [ValidateNever]
         public virtual ICollection<Chapter> Chapters { get; set; } = new List<Chapter>();
     }
 }

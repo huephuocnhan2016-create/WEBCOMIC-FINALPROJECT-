@@ -12,8 +12,8 @@ using WEBCOMIC_FINALPROJECT_.Data;
 namespace WEBCOMIC_FINALPROJECT_.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260322142850_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20260324134717_AddQuizSystem")]
+    partial class AddQuizSystem
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -158,26 +158,6 @@ namespace WEBCOMIC_FINALPROJECT_.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("WEBCOMIC_FINALPROJECT_.Data.SystemConfig", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Key")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("Value")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("SystemConfigs");
-                });
-
             modelBuilder.Entity("WEBCOMIC_FINALPROJECT_.Models.ApplicationUser", b =>
                 {
                     b.Property<string>("Id")
@@ -260,10 +240,16 @@ namespace WEBCOMIC_FINALPROJECT_.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("Content")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<int>("MangaId")
                         .HasColumnType("int");
 
-                    b.Property<string>("Name")
+                    b.Property<string>("Title")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -300,6 +286,9 @@ namespace WEBCOMIC_FINALPROJECT_.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("AuthorId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Description")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -350,6 +339,71 @@ namespace WEBCOMIC_FINALPROJECT_.Migrations
                     b.HasIndex("ChapterId");
 
                     b.ToTable("MangaImages");
+                });
+
+            modelBuilder.Entity("WEBCOMIC_FINALPROJECT_.Models.QuizHistory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("DatePlayed")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("QuizHistories");
+                });
+
+            modelBuilder.Entity("WEBCOMIC_FINALPROJECT_.Models.SystemConfig", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Value")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("SystemConfigs");
+                });
+
+            modelBuilder.Entity("WEBCOMIC_FINALPROJECT_.Models.UserMangaUnlock", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("MangaId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UnlockDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("UserMangaUnlocks");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -406,7 +460,7 @@ namespace WEBCOMIC_FINALPROJECT_.Migrations
             modelBuilder.Entity("WEBCOMIC_FINALPROJECT_.Models.Chapter", b =>
                 {
                     b.HasOne("WEBCOMIC_FINALPROJECT_.Models.Manga", "Manga")
-                        .WithMany()
+                        .WithMany("Chapters")
                         .HasForeignKey("MangaId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -436,6 +490,17 @@ namespace WEBCOMIC_FINALPROJECT_.Migrations
                     b.Navigation("Chapter");
                 });
 
+            modelBuilder.Entity("WEBCOMIC_FINALPROJECT_.Models.QuizHistory", b =>
+                {
+                    b.HasOne("WEBCOMIC_FINALPROJECT_.Models.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("WEBCOMIC_FINALPROJECT_.Models.Chapter", b =>
                 {
                     b.Navigation("Images");
@@ -444,6 +509,11 @@ namespace WEBCOMIC_FINALPROJECT_.Migrations
             modelBuilder.Entity("WEBCOMIC_FINALPROJECT_.Models.Genre", b =>
                 {
                     b.Navigation("Mangas");
+                });
+
+            modelBuilder.Entity("WEBCOMIC_FINALPROJECT_.Models.Manga", b =>
+                {
+                    b.Navigation("Chapters");
                 });
 #pragma warning restore 612, 618
         }

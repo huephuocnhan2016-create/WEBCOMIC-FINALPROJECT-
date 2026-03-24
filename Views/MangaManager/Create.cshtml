@@ -1,34 +1,30 @@
-﻿@model Manga
+﻿@model WEBCOMIC_FINALPROJECT_.Models.Chapter
 
-<div class="container mt-4">
+<div class="container mt-4 text-white">
     <div class="row justify-content-center">
         <div class="col-md-6">
-            <div class="card shadow">
-                <div class="card-header bg-primary text-white">
-                    <h4 class="mb-0">Đăng truyện mới</h4>
+            <div class="card shadow bg-dark border-secondary">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0"><i class="bi bi-journal-plus"></i> Thêm chương mới</h4>
                 </div>
                 <div class="card-body">
-                    <form asp-action="Create" method="post">
+                    <form asp-controller="MangaManager" asp-action="Create" method="post">
+                        @Html.AntiForgeryToken()
+
+                        @* SỬA TẠI ĐÂY: Dùng input hidden thủ công để đảm bảo chắc chắn MangaId được gửi đi *@
+                        <input type="hidden" name="MangaId" value="@ViewBag.MangaId" />
+
                         <div class="mb-3">
-                            <label class="form-label">Tên bộ truyện</label>
-                            <input asp-for="Title" class="form-control" placeholder="Nhập tên truyện..." required />
+                            <label asp-for="Title" class="form-label fw-bold">Tên chương (VD: Chapter 1)</label>
+                            <input asp-for="Title" class="form-control bg-secondary text-white border-0" required />
+                            <span asp-validation-for="Title" class="text-danger"></span>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">Link ảnh bìa (URL)</label>
-                            <input asp-for="ImageUrl" class="form-control" placeholder="https://..." required />
-                            <small class="text-muted">Lưu ý: Ảnh này sẽ được dùng làm câu hỏi trong Daily Quiz.</small>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-success flex-grow-1">Tạo chương</button>
+                            @* SỬA TẠI ĐÂY: Truyền đúng tham số 'id' cho hàm Details *@
+                            <a asp-action="Details" asp-controller="MangaManager" asp-route-id="@ViewBag.MangaId" class="btn btn-outline-light">Hủy</a>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">Thể loại</label>
-                            <select asp-for="GenreId" class="form-select" asp-items="@ViewBag.GenreList">
-                                <option value="">-- Chọn thể loại --</option>
-                            </select>
-                        </div>
-                        <div class="form-check mb-3">
-                            <input asp-for="IsVipOnly" class="form-check-input" type="checkbox" id="vipCheck">
-                            <label class="form-check-label" for="vipCheck">Đây là truyện VIP</label>
-                        </div>
-                        <button type="submit" class="btn btn-primary w-100">Gửi yêu cầu duyệt</button>
                     </form>
                 </div>
             </div>

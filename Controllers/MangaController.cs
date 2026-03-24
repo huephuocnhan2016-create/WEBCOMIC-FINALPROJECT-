@@ -2,91 +2,25 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using WEBCOMIC_FINALPROJECT_.Data; // Thêm dòng này để nhận diện ApplicationDbContext
-using WEBCOMIC_FINALPROJECT_.Models;
+using WEBCOMIC_FINALPROJECT_.Data; // Namespace chứa ApplicationDbContext
+using WEBCOMIC_FINALPROJECT_.Models; // Namespace chứa ApplicationUser, Manga, v.v.
 
 namespace WEBCOMIC_FINALPROJECT_.Controllers
 {
-    // CỰC KỲ QUAN TRỌNG: Phải có Class bao quanh các phương thức
     public class MangaController : Controller
     {
+        // 1. Khai báo các dịch vụ cần thiết
         private readonly ApplicationDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
 
-        // Constructor để Inject Database và Identity User Manager
+        // 2. Inject dịch vụ thông qua Constructor (BẮT BUỘC để hết lỗi _context)
         public MangaController(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
         {
             _context = context;
             _userManager = userManager;
         }
 
-        [Authorize]
-        public async Task<IActionResult> Details(int id)
-        {
-            var manga = await _context.Mangas
-                .Include(m => m.Chapters)
-                .FirstOrDefaultAsync(m => m.Id == id);
-
-            if (manga == null) return NotFound();
-
-            var user = await _userManager.GetUserAsync(User);
-
-            // Kiểm tra nếu là truyện VIP
-            if (manga.IsVipOnly)
-            {
-                // 1. Nếu là Admin thì miễn phí
-                var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
-
-                // 2. Kiểm tra xem User đã mua truyện này chưa
-                var isUnlocked = await _context.UserMangaUnlocks
-                    .AnyAsync(u => u.UserId == user.Id && u.MangaId == id);
-
-                if (!isAdmin && !isUnlocked)
-                {
-                    var vipConfig = await _context.SystemConfigs.FirstOrDefaultAsync(c => c.Key == "PointsToVip");
-                    int price = vipConfig?.Value ?? 50;
-
-                    ViewBag.IsLocked = true;
-                    ViewBag.VipPrice = price;
-                    ViewBag.UserPoints = user.RewardPoints;
-                }
-            }
-
-            return View(manga);
-        }
-
-        [HttpPost]
-        [Authorize]
-        public async Task<IActionResult> UnlockManga(int id)
-        {
-            var user = await _userManager.GetUserAsync(User);
-            var vipConfig = await _context.SystemConfigs.FirstOrDefaultAsync(c => c.Key == "PointsToVip");
-            int price = vipConfig?.Value ?? 50;
-
-            if (user.RewardPoints >= price)
-            {
-                // Trừ điểm
-                user.RewardPoints -= price;
-
-                // Lưu vết mở khóa
-                _context.UserMangaUnlocks.Add(new UserMangaUnlock
-                {
-                    UserId = user.Id,
-                    MangaId = id
-                });
-
-                // Cập nhật cả 2 bảng cùng lúc
-                await _userManager.UpdateAsync(user);
-                await _context.SaveChangesAsync();
-
-                return RedirectToAction("Details", new { id = id });
-            }
-
-            TempData["Error"] = "Bạn không đủ điểm để mở khóa truyện này!";
-            return RedirectToAction("Details", new { id = id });
-        }
-
-        // Bạn nên thêm Action Read ở đây luôn để hoàn thiện luồng đọc truyện
+        // 3. Hàm Read xử lý trang đọc truyện
         public async Task<IActionResult> Read(int id)
         {
             var chapter = await _context.Chapters
@@ -96,18 +30,40 @@ namespace WEBCOMIC_FINALPROJECT_.Controllers
 
             if (chapter == null) return NotFound();
 
-            // Bảo mật: Kiểm tra xem user đã unlock Manga này chưa nếu là VIP
-            if (chapter.Manga.IsVipOnly)
+            // Xử lý bảo mật cho truyện VIP
+            if (chapter.Manga != null && chapter.Manga.IsVipOnly)
             {
-                var user = await _userManager.GetUserAsync(User);
-                var isUnlocked = await _context.UserMangaUnlocks
-                    .AnyAsync(u => u.UserId == user.Id && u.MangaId == chapter.MangaId);
+                if (!User.Identity.IsAuthenticated) return Challenge();
 
-                if (!isUnlocked && !User.IsInRole("Admin"))
+                var user = await _userManager.GetUserAsync(User);
+                if (user == null) return Challenge();
+
+                bool isAdmin = User.IsInRole("Admin");
+                bool isAuthor = chapter.Manga.AuthorId == user.Id;
+
+                // Gán ID ra biến riêng để tránh lỗi dịch Expression Tree trong một số phiên bản EF
+                var currentUserId = user.Id;
+                bool isUnlocked = await _context.UserMangaUnlocks
+                    .AnyAsync(u => u.UserId == currentUserId && u.MangaId == chapter.MangaId);
+
+                if (!isUnlocked && !isAdmin && !isAuthor)
                 {
-                    return RedirectToAction("Details", new { id = chapter.MangaId });
+                    TempData["Error"] = "Bạn cần mở khóa để đọc chương VIP này!";
+                    // Chuyển hướng về trang Details của MangaManagerController
+                    return RedirectToAction("Details", "MangaManager", new { id = chapter.MangaId });
                 }
             }
+
+            // Logic tìm chương Trước (Prev) và Sau (Next)
+            var allChapters = await _context.Chapters
+                .Where(c => c.MangaId == chapter.MangaId)
+                .OrderBy(c => c.Id)
+                .ToListAsync();
+
+            var currentIndex = allChapters.FindIndex(c => c.Id == id);
+
+            ViewBag.PrevId = currentIndex > 0 ? allChapters[currentIndex - 1].Id : (int?)null;
+            ViewBag.NextId = currentIndex < allChapters.Count - 1 ? allChapters[currentIndex + 1].Id : (int?)null;
 
             return View(chapter);
         }

@@ -1,0 +1,25 @@
+﻿@model WEBCOMIC_FINALPROJECT_.Models.Chapter
+
+<div class="container mt-5 text-white bg-dark p-4 rounded shadow">
+    <h2 class="text-primary"><i class="bi bi-journal-plus"></i> Thêm Chương Mới</h2>
+    <hr class="border-secondary" />
+    <form asp-action="Create" method="post">
+        <input type="hidden" name="mangaId" value="@ViewBag.MangaId" />
+
+        <div class="mb-3">
+            <label class="form-label fw-bold">Tên chương</label>
+            <input type="text" name="title" class="form-control bg-secondary text-white border-0" placeholder="Ví dụ: Chương 01" required />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label fw-bold">Link ảnh (Dán mỗi link một dòng)</label>
+            <textarea name="imageUrls" class="form-control bg-secondary text-white border-0" rows="12" placeholder="https://link1.jpg&#10;https://link2.jpg"></textarea>
+            <small class="text-info mt-1 d-block italic">Hệ thống sẽ tự động sắp xếp thứ tự ảnh theo dòng.</small>
+        </div>
+
+        <div class="pt-3">
+            <button type="submit" class="btn btn-primary px-5">Xuất bản chương</button>
+            <a href="/MangaManager/Details/@ViewBag.MangaId" class="btn btn-outline-light">Hủy</a>
+        </div>
+    </form>
+</div>
