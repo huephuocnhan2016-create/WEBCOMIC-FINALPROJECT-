@@ -6,19 +6,14 @@ using WEBCOMIC_FINALPROJECT_.Models;
 var builder = WebApplication.CreateBuilder(args);
 
 // --- PHẦN 1: ĐĂNG KÝ SERVICES ---
-
-// 1. Lấy Connection String
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
-// 2. Đăng ký DbContext
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
 
-// 3. Cấu hình Identity (Sử dụng ApplicationUser và IdentityRole)
-// LƯU Ý: Đã xóa AddDefaultIdentity để tránh xung đột
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options => {
-    options.SignIn.RequireConfirmedAccount = false; // Tắt xác nhận email để dễ test
+    options.SignIn.RequireConfirmedAccount = false;
     options.Password.RequireDigit = false;
     options.Password.RequiredLength = 6;
     options.Password.RequireNonAlphanumeric = false;
@@ -27,13 +22,19 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options => {
 })
 .AddEntityFrameworkStores<ApplicationDbContext>()
 .AddDefaultTokenProviders()
-.AddDefaultUI(); // Cần thiết để Identity Razor Pages (
-                 // /Register) hoạt động
+.AddDefaultUI();
+
+// FIX LỖI 404: Cấu hình đường dẫn khi chưa đăng nhập
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.LoginPath = "/Identity/Account/Login";
+    options.LogoutPath = "/Identity/Account/Logout";
+    options.AccessDeniedPath = "/Identity/Account/AccessDenied";
+});
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
 
-// 4. Cấu hình Phân quyền (Policies)
 builder.Services.AddAuthorization(options => {
     options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
     options.AddPolicy("ModeratorOnly", policy => policy.RequireRole("Moderator"));
@@ -42,8 +43,7 @@ builder.Services.AddAuthorization(options => {
 
 var app = builder.Build();
 
-// --- PHẦN 2: CẤU HÌNH PIPELINE (MIDDLEWARE) ---
-
+// --- PHẦN 2: CẤU HÌNH PIPELINE ---
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
@@ -52,35 +52,23 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
-
 app.UseRouting();
 
-// Thứ tự Authentication TRƯỚC Authorization là bắt buộc
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Cấu hình Route cho Controller
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
-// Ánh xạ các trang Identity (Login, Register, v.v.)
 app.MapRazorPages();
 
-// --- PHẦN 3: SEED DATA (CHẠY KHI ỨNG DỤNG KHỞI ĐỘNG) ---
+// --- PHẦN 3: SEED DATA ---
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
-    try
-    {
-        // Khởi tạo Roles, Admin User và System Configs
-        await SeedData.Initialize(services);
-    }
-    catch (Exception ex)
-    {
-        var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "Một lỗi đã xảy ra trong quá trình Seed dữ liệu.");
-    }
+    try { await SeedData.Initialize(services); }
+    catch (Exception ex) { /* Log error */ }
 }
 
 app.Run();

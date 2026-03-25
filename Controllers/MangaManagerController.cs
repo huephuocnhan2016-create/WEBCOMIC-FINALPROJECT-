@@ -123,6 +123,20 @@ namespace WEBCOMIC_FINALPROJECT_.Controllers
                 .FirstOrDefaultAsync(c => c.Id == id);
 
             if (chapter == null) return NotFound();
+            bool canRead = true;
+            // KIỂM TRA CƠ CHẾ VIP
+            if (chapter.Manga.IsVipOnly) //
+            {
+                var currentUser = await _userManager.GetUserAsync(User);
+
+                // ĐIỀU KIỆN CHẶN: 
+                // Nếu chưa đăng nhập HOẶC (Không phải tác giả CỦA TRUYỆN NÀY VÀ không có VIP)
+                if (currentUser == null || (chapter.Manga.AuthorId != currentUser.Id && !currentUser.IsVip))
+                {
+                    canRead = false; // Đánh dấu là không được đọc
+                }
+            }
+            ViewBag.CanRead = canRead;
 
             // 2. Tìm ID của chương trước và chương sau
             var prevChapter = await _context.Chapters

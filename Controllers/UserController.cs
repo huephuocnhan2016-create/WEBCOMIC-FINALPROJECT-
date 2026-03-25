@@ -21,49 +21,47 @@ namespace WEBCOMIC_FINALPROJECT_.Controllers
         public async Task<IActionResult> Profile()
         {
             var user = await _userManager.GetUserAsync(User);
-            ViewBag.PointsToVip = _context.SystemConfigs.FirstOrDefault(c => c.Key == "PointsToVip")?.Value ?? 50;
-            return View(user);
-        }
+            if (user == null) return Challenge();
 
-        public async Task CheckVipStatus(ApplicationUser user)
-        {
             if (user.IsVip && user.VipExpiryDate < DateTime.Now)
             {
                 user.IsVip = false;
-                user.VipExpiryDate = null;
                 await _userManager.UpdateAsync(user);
             }
+
+            ViewBag.PointsToVip = _context.SystemConfigs.FirstOrDefault(c => c.Key == "PointsToVip")?.Value ?? 10;
+            return View(user);
         }
+
         [HttpPost]
-        public async Task<IActionResult> RedeemVip()
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RedeemVip() // Đã sửa tên từ UpgradeVip -> RedeemVip
         {
             var user = await _userManager.GetUserAsync(User);
-            var requiredPoints = _context.SystemConfigs.FirstOrDefault(c => c.Key == "PointsToVip")?.Value ?? 50;
+            if (user == null) return Challenge();
 
-            if (user.RewardPoints >= requiredPoints)
+            var requiredPoints = _context.SystemConfigs.FirstOrDefault(c => c.Key == "PointsToVip")?.Value ?? 10;
+
+            if (user.RewardPoints < requiredPoints)
             {
-                user.RewardPoints -= requiredPoints;
-                user.IsVip = true;
-                // Cộng dồn 7 ngày nếu đang là VIP, nếu không thì tính từ hôm nay
-                DateTime start = (user.VipExpiryDate > DateTime.Now) ? user.VipExpiryDate.Value : DateTime.Now;
-                user.VipExpiryDate = start.AddDays(7);
-
-                await _userManager.UpdateAsync(user);
-                TempData["Success"] = "Đổi VIP 1 tuần thành công!";
+                TempData["Error"] = $"Bạn không đủ điểm. Cần {requiredPoints} điểm.";
+                return RedirectToAction("Profile");
             }
-            else
+
+            user.RewardPoints -= requiredPoints;
+            user.IsVip = true;
+
+            // Tính toán ngày hết hạn (cộng dồn 7 ngày)
+            DateTime start = (user.VipExpiryDate.HasValue && user.VipExpiryDate.Value > DateTime.Now)
+                             ? user.VipExpiryDate.Value
+                             : DateTime.Now;
+            user.VipExpiryDate = start.AddDays(7);
+
+            var result = await _userManager.UpdateAsync(user);
+            if (result.Succeeded)
             {
-                TempData["Error"] = "Bạn không đủ điểm.";
+                TempData["Success"] = $"Đổi VIP thành công! Hạn dùng: {user.VipExpiryDate?.ToString("dd/MM/yyyy")}";
             }
-            return RedirectToAction("Profile");
-
-        }
-        [HttpPost]
-public async Task<IActionResult> RequestAuthor()
-        {
-            var user = await _userManager.GetUserAsync(User);
-            // Lưu yêu cầu vào một bảng tạm hoặc gửi Email cho Admin
-            TempData["Success"] = "Yêu cầu của bạn đã được gửi. Admin sẽ sớm xét duyệt!";
             return RedirectToAction("Profile");
         }
     }
