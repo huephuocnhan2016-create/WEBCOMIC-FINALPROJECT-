@@ -2,15 +2,22 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using WEBCOMIC_FINALPROJECT_.Data;
 using WEBCOMIC_FINALPROJECT_.Models;
+using WEBCOMIC_FINALPROJECT_.Hubs; // [MỚI] Thêm namespace của thư mục Hubs
 
 var builder = WebApplication.CreateBuilder(args);
 
-// --- PHẦN 1: ĐĂNG KÝ SERVICES ---
+// --- 1. ĐĂNG KÝ SERVICES ---
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
+
+// [MỚI] Đăng ký MemoryCache (Dùng cho HomeController mà bạn đã viết trước đó)
+builder.Services.AddMemoryCache();
+
+// [MỚI] Đăng ký SignalR (Dùng cho Kênh chat cộng đồng)
+builder.Services.AddSignalR();
 
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options => {
     options.SignIn.RequireConfirmedAccount = false;
@@ -24,7 +31,7 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options => {
 .AddDefaultTokenProviders()
 .AddDefaultUI();
 
-// FIX LỖI 404: Cấu hình đường dẫn khi chưa đăng nhập
+// Cấu hình đường dẫn điều hướng
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.LoginPath = "/Identity/Account/Login";
@@ -43,7 +50,7 @@ builder.Services.AddAuthorization(options => {
 
 var app = builder.Build();
 
-// --- PHẦN 2: CẤU HÌNH PIPELINE ---
+// --- 2. CẤU HÌNH PIPELINE ---
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
@@ -57,18 +64,29 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
+// --- 3. ĐỊNH TUYẾN (MAPPING) ---
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
 app.MapRazorPages();
 
-// --- PHẦN 3: SEED DATA ---
+// [MỚI] Cấu hình đường dẫn kết nối cho Kênh Chat
+app.MapHub<ChatHub>("/chatHub");
+
+// --- 4. SEED DATA ---
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
-    try { await SeedData.Initialize(services); }
-    catch (Exception ex) { /* Log error */ }
+    try
+    {
+        await SeedData.Initialize(services);
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "Lỗi khi Seed dữ liệu!");
+    }
 }
 
-app.Run();
+app.Run();      

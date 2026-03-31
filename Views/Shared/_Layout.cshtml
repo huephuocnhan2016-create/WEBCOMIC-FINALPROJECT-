@@ -34,6 +34,10 @@
                 outline: none;
                 border-color: #ff0000;
             }
+        /* Style cho icon chat nổi bật */
+        .nav-link i.bi-chat-dots-fill {
+            color: #0d6efd;
+        }
     </style>
 </head>
 
@@ -53,21 +57,30 @@
 
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
                     <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                        @* --- MENU MỚI: LỊCH SỬ & CHAT --- *@
+                        <li class="nav-item">
+                            <a class="nav-link text-white" asp-controller="Home" asp-action="History">
+                                <i class="bi bi-clock-history me-1"></i>Lịch sử
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-white" asp-controller="Home" asp-action="CommunityChat">
+                                <i class="bi bi-chat-dots-fill me-1"></i>Cộng đồng
+                            </a>
+                        </li>
+
                         @if (User.IsInRole("Author"))
                         {
-                            @* ĐÃ SỬA: Đổi Create thành CreateManga để vào trang đăng bộ truyện mới *@
                             <li class="nav-item">
                                 <a class="nav-link text-success" asp-controller="MangaManager" asp-action="CreateManga">Đăng truyện</a>
                             </li>
                         }
-
                         @if (User.IsInRole("Moderator"))
                         {
                             <li class="nav-item">
                                 <a class="nav-link text-warning" asp-controller="MangaManager" asp-action="PendingList">Duyệt bài</a>
                             </li>
                         }
-
                         @if (User.IsInRole("Admin"))
                         {
                             <li class="nav-item">
@@ -94,14 +107,17 @@
         </main>
     </div>
 
-    @* Mobile Navigation *@
+    @* --- CẬP NHẬT MOBILE NAVIGATION --- *@
     <div class="fixed-bottom d-md-none bg-dark border-top border-secondary p-2 shadow-lg">
         <div class="d-flex justify-content-around text-center">
             <a asp-controller="Home" asp-action="Index" class="text-white text-decoration-none small">
                 <i class="bi bi-house-door fs-4"></i><br>Home
             </a>
-            <a asp-controller="Quiz" asp-action="Index" class="text-danger text-decoration-none small">
-                <i class="bi bi-controller fs-4"></i><br>Quiz
+            <a asp-controller="Home" asp-action="History" class="text-white text-decoration-none small">
+                <i class="bi bi-clock-history fs-4"></i><br>Lịch sử
+            </a>
+            <a asp-controller="Home" asp-action="CommunityChat" class="text-primary text-decoration-none small">
+                <i class="bi bi-chat-dots-fill fs-4"></i><br>Chat
             </a>
             @if (User.Identity.IsAuthenticated)
             {
@@ -127,11 +143,11 @@
         $(document).ready(function() {
             @if (TempData["Success"] != null)
             {
-                    <text>toastr.success('@TempData["Success"]');</text>
+                <text>toastr.success('@TempData["Success"]');</text>
             }
             @if (TempData["Error"] != null)
             {
-                    <text>toastr.error('@TempData["Error"]');</text>
+                <text>toastr.error('@TempData["Error"]');</text>
             }
         });
     </script>
