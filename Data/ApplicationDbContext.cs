@@ -16,6 +16,9 @@ namespace WEBCOMIC_FINALPROJECT_.Data
         public DbSet<MangaImage> Images { get; set; } // Tên DbSet là Images
         public DbSet<QuizHistory> QuizHistories { get; set; }
         public DbSet<MangaImage> MangaImages { get; set; }
+
+        public DbSet<ReadingHistory> ReadingHistories { get; set; }
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);

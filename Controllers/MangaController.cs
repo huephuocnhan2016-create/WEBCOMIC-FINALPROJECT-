@@ -1,71 +1,123 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using WEBCOMIC_FINALPROJECT_.Data; // Namespace chứa ApplicationDbContext
-using WEBCOMIC_FINALPROJECT_.Models; // Namespace chứa ApplicationUser, Manga, v.v.
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
+using WEBCOMIC_FINALPROJECT_.Data;
+using WEBCOMIC_FINALPROJECT_.Models;
 
 namespace WEBCOMIC_FINALPROJECT_.Controllers
 {
     public class MangaController : Controller
     {
-        // 1. Khai báo các dịch vụ cần thiết
         private readonly ApplicationDbContext _context;
-        private readonly UserManager<ApplicationUser> _userManager;
 
-        // 2. Inject dịch vụ thông qua Constructor (BẮT BUỘC để hết lỗi _context)
-        public MangaController(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
+        public MangaController(ApplicationDbContext context)
         {
             _context = context;
-            _userManager = userManager;
         }
 
-        // 3. Hàm Read xử lý trang đọc truyện
-        public async Task<IActionResult> Read(int id)
+        // 1. HIỂN THỊ DANH SÁCH & TÌM KIẾM
+        public async Task<IActionResult> Index(string searchString)
         {
-            var chapter = await _context.Chapters
-                .Include(c => c.Images)
-                .Include(c => c.Manga)
-                .FirstOrDefaultAsync(c => c.Id == id);
+            var mangas = _context.Mangas.Include(m => m.Genre).AsQueryable();
 
-            if (chapter == null) return NotFound();
-
-            // Xử lý bảo mật cho truyện VIP
-            if (chapter.Manga != null && chapter.Manga.IsVipOnly)
+            if (!string.IsNullOrEmpty(searchString))
             {
-                if (!User.Identity.IsAuthenticated) return Challenge();
+                mangas = mangas.Where(s => s.Title!.Contains(searchString)
+                                        || s.AuthorName!.Contains(searchString));
+            }
 
-                var user = await _userManager.GetUserAsync(User);
-                if (user == null) return Challenge();
+            ViewData["CurrentFilter"] = searchString;
+            return View(await mangas.ToListAsync());
+        }
 
-                bool isAdmin = User.IsInRole("Admin");
-                bool isAuthor = chapter.Manga.AuthorId == user.Id;
+        // 2. XEM CHI TIẾT TRUYỆN & LƯU LỊCH SỬ ĐỌC
+        public async Task<IActionResult> Details(int? id)
+        {
+            if (id == null) return NotFound();
 
-                // Gán ID ra biến riêng để tránh lỗi dịch Expression Tree trong một số phiên bản EF
-                var currentUserId = user.Id;
-                bool isUnlocked = await _context.UserMangaUnlocks
-                    .AnyAsync(u => u.UserId == currentUserId && u.MangaId == chapter.MangaId);
+            var manga = await _context.Mangas
+                .Include(m => m.Genre)
+                .Include(m => m.Chapters)
+                .FirstOrDefaultAsync(m => m.Id == id);
 
-                if (!isUnlocked && !isAdmin && !isAuthor)
+            if (manga == null) return NotFound();
+
+            // --- TĂNG LƯỢT XEM (Phục vụ mục Truyện Hot) ---
+            manga.ViewCount++;
+            _context.Update(manga);
+
+            // --- LƯU LỊCH SỬ ĐỌC (Nếu User đã đăng nhập) ---
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId != null)
+            {
+                var existingHistory = await _context.ReadingHistories
+                    .FirstOrDefaultAsync(h => h.UserId == userId && h.MangaId == id);
+
+                if (existingHistory == null)
                 {
-                    TempData["Error"] = "Bạn cần mở khóa để đọc chương VIP này!";
-                    // Chuyển hướng về trang Details của MangaManagerController
-                    return RedirectToAction("Details", "MangaManager", new { id = chapter.MangaId });
+                    _context.ReadingHistories.Add(new ReadingHistory
+                    {
+                        UserId = userId,
+                        MangaId = id.Value,
+                        LastRead = DateTime.Now
+                    });
+                }
+                else
+                {
+                    // Nếu đã đọc rồi thì cập nhật lại thời gian mới nhất lên đầu
+                    existingHistory.LastRead = DateTime.Now;
                 }
             }
 
-            // Logic tìm chương Trước (Prev) và Sau (Next)
-            var allChapters = await _context.Chapters
-                .Where(c => c.MangaId == chapter.MangaId)
-                .OrderBy(c => c.Id)
-                .ToListAsync();
+            await _context.SaveChangesAsync();
+            return View(manga);
+        }
 
-            var currentIndex = allChapters.FindIndex(c => c.Id == id);
+        // 3. THÊM TRUYỆN MỚI
+        [Authorize(Roles = "Admin,Author")]
+        public IActionResult Create()
+        {
+            ViewData["GenreId"] = new SelectList(_context.Genres, "Id", "Name");
+            return View();
+        }
 
-            ViewBag.PrevId = currentIndex > 0 ? allChapters[currentIndex - 1].Id : (int?)null;
-            ViewBag.NextId = currentIndex < allChapters.Count - 1 ? allChapters[currentIndex + 1].Id : (int?)null;
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin,Author")]
+        public async Task<IActionResult> Create(Manga manga)
+        {
+            manga.AuthorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            return View(chapter);
+            if (ModelState.IsValid)
+            {
+                _context.Add(manga);
+                await _context.SaveChangesAsync();
+                return RedirectToAction(nameof(Index));
+            }
+            ViewData["GenreId"] = new SelectList(_context.Genres, "Id", "Name", manga.GenreId);
+            return View(manga);
+        }
+
+        // 4. XÓA TRUYỆN
+        [HttpPost]
+        [Authorize(Roles = "Admin,Author")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var manga = await _context.Mangas.FindAsync(id);
+            if (manga == null) return NotFound();
+
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (User.IsInRole("Admin") || manga.AuthorId == currentUserId)
+            {
+                _context.Mangas.Remove(manga);
+                await _context.SaveChangesAsync();
+                return RedirectToAction(nameof(Index));
+            }
+
+            return Forbid();
         }
     }
 }
