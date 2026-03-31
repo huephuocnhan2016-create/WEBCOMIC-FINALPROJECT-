@@ -1,7 +1,11 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Security.Claims;
+using System.Threading.Tasks;
 using WEBCOMIC_FINALPROJECT_.Data;
 using WEBCOMIC_FINALPROJECT_.Models;
 
@@ -18,19 +22,32 @@ namespace WEBCOMIC_FINALPROJECT_.Controllers
             _cache = cache;
         }
 
+        public IActionResult Search(string query)
+        {
+            return RedirectToAction("Index", new { search = query });
+        }
+
         public async Task<IActionResult> Index(int page = 1, string search = "")
         {
-            int pageSize = 12;
+            int pageSize = 24;
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            const string CacheKey = "LatestMangas";
 
-            // --- TÍNH NĂNG 1: TRUYỆN HOT (Dựa trên ViewCount) ---
+            // --- 1. LẤY TRUYỆN CHỮ (NOVEL) ---
+            ViewBag.Novels = await _context.Novels
+                .Include(n => n.Genre)
+                .Where(n => n.IsApproved)
+                .OrderByDescending(n => n.Id)
+                .ToListAsync();
+
+            // --- 2. LẤY TRUYỆN TRANH HOT (Dựa trên ViewCount) ---
             ViewBag.HotMangas = await _context.Mangas
                 .Where(m => m.IsApproved)
                 .OrderByDescending(m => m.ViewCount)
-                .Take(5) // Lấy 5 truyện hot nhất
+                .Take(5)
                 .ToListAsync();
 
-            // --- TÍNH NĂNG 1.2: TRUYỆN THEO SỞ THÍCH (Dựa trên thể loại đã đọc gần nhất) ---
+            // --- 3. TRUYỆN THEO SỞ THÍCH (Dựa trên thể loại đã đọc gần nhất) ---
             if (userId != null)
             {
                 var lastReadGenreId = await _context.ReadingHistories
@@ -48,17 +65,54 @@ namespace WEBCOMIC_FINALPROJECT_.Controllers
                 }
             }
 
-            // --- LOGIC PHÂN TRANG & SEARCH CŨ CỦA BẠN ---
-            IQueryable<Manga> query = _context.Mangas.Include(m => m.Genre).Where(m => m.IsApproved);
-
+            // --- 4. TÌM KIẾM TRUYỆN TRANH ---
             if (!string.IsNullOrEmpty(search))
             {
-                query = query.Where(m => m.Title.Contains(search));
+                var searchQuery = _context.Mangas
+                    .Include(m => m.Genre)
+                    .Where(m => m.IsApproved && m.Title.Contains(search));
+
+                var totalSearch = await searchQuery.CountAsync();
+                var searchResults = await searchQuery
+                    .OrderByDescending(m => m.Id)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync();
+
+                ViewBag.CurrentPage = page;
+                ViewBag.TotalPages = (int)Math.Ceiling((double)totalSearch / pageSize);
                 ViewBag.Search = search;
+
+                return View(searchResults);
             }
 
-            var totalCount = await query.CountAsync();
-            var pagedMangas = await query
+            // --- 5. HIỂN THỊ DANH SÁCH TRUYỆN TRANH (Trang 1 có Cache) ---
+            if (page == 1)
+            {
+                if (!_cache.TryGetValue(CacheKey, out List<Manga> mangas))
+                {
+                    mangas = await _context.Mangas
+                        .Include(m => m.Genre)
+                        .Where(m => m.IsApproved)
+                        .OrderByDescending(m => m.Id)
+                        .Take(pageSize)
+                        .AsNoTracking()
+                        .ToListAsync();
+
+                    _cache.Set(CacheKey, mangas, TimeSpan.FromMinutes(2));
+                }
+
+                var totalItems = await _context.Mangas.CountAsync(m => m.IsApproved);
+                ViewBag.CurrentPage = 1;
+                ViewBag.TotalPages = (int)Math.Ceiling((double)totalItems / pageSize);
+
+                return View(mangas);
+            }
+
+            // --- 6. PHÂN TRANG CHO TRUYỆN TRANH (Từ trang 2 trở đi) ---
+            var queryAll = _context.Mangas.Include(m => m.Genre).Where(m => m.IsApproved);
+            var totalCount = await queryAll.CountAsync();
+            var pagedMangas = await queryAll
                 .OrderByDescending(m => m.Id)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
@@ -70,7 +124,7 @@ namespace WEBCOMIC_FINALPROJECT_.Controllers
             return View(pagedMangas);
         }
 
-        // --- TÍNH NĂNG 2: XEM LỊCH SỬ ĐỌC TRUYỆN ---
+        // --- TÍNH NĂNG 7: XEM LỊCH SỬ ĐỌC TRUYỆN ---
         public async Task<IActionResult> History()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -85,15 +139,10 @@ namespace WEBCOMIC_FINALPROJECT_.Controllers
             return View(history);
         }
 
-        // --- TÍNH NĂNG 3: KÊNH CHAT CHUNG (Chỉ chuyển hướng đến View Chat) ---
+        // --- TÍNH NĂNG 8: KÊNH CHAT CHUNG ---
         public IActionResult CommunityChat()
         {
             return View();
-        }
-
-        public IActionResult Search(string query)
-        {
-            return RedirectToAction("Index", new { search = query });
         }
     }
 }

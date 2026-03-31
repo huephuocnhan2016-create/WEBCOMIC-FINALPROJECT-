@@ -12,7 +12,7 @@
 <div class="container mt-4 text-white">
     <div class="row">
         <div class="col-md-4">
-            <img src="@Model.ImageUrl" class="img-fluid rounded shadow w-100">
+            <img src="@Model.ImageUrl" class="img-fluid rounded shadow w-100" />
             <div class="d-grid gap-2 mt-3">
                 @* CHỈ AUTHOR MỚI ĐƯỢC THÊM CHƯƠNG *@
                 @if (isOwner)
@@ -31,6 +31,30 @@
                 <span class="badge bg-success mb-2">Truyện của bạn</span>
             }
             <h1 class="text-warning">@Model.Title</h1>
+
+            @* --- PHẦN ĐÁNH GIÁ TRUYỆN TRANH --- *@
+            <div class="rating-section mb-3 d-flex align-items-center gap-3">
+                @* 1. Hiển thị điểm trung bình *@
+                <div class="d-flex align-items-center bg-dark p-2 px-3 rounded border border-warning shadow-sm">
+                    <span class="text-warning fw-bold fs-4 me-1">⭐ @(ViewBag.AvgRating?.ToString("0.0") ?? "0.0")</span>
+                    <span class="text-muted small">/ 5</span>
+                </div>
+
+                @* 2. Các ngôi sao để người dùng bấm chọn *@
+                <div class="star-rating d-flex">
+                    @for (int i = 1; i <= 5; i++)
+                    {
+                        <form asp-controller="MangaManager" asp-action="RateManga" asp-route-id="@Model.Id" method="post" class="m-0">
+                            <input type="hidden" name="score" value="@i" />
+                            <button type="submit" class="btn btn-link p-1 border-0 shadow-none" title="Đánh giá @i sao">
+                                <i class="bi @(i <= (ViewBag.UserRating ?? 0) ? "bi-star-fill text-warning" : "bi-star text-secondary") fs-3"></i>
+                            </button>
+                        </form>
+                    }
+                </div>
+            </div>
+            @* --------------------------------- *@
+
             <p class="bg-dark p-3 border border-secondary rounded">@Model.Description</p>
 
             <h4 class="mt-4">Danh sách chương</h4>

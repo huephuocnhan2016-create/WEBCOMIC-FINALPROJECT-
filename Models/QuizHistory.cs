@@ -15,6 +15,9 @@ namespace WEBCOMIC_FINALPROJECT_.Models
         [Required]
         public DateTime DatePlayed { get; set; }
 
+        [Required]
+        public string QuizType { get; set; }
+
         // Thiết lập mối quan hệ với bảng User (Nếu cần)
         [ForeignKey("UserId")]
         public virtual ApplicationUser User { get; set; }

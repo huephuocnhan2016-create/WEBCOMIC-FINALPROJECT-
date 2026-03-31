@@ -21,6 +21,8 @@ namespace WEBCOMIC_FINALPROJECT_.Models
         [ValidateNever]
         public virtual Manga? Manga { get; set; }
 
+        public int ChapterNumber { get; set; }
+
         // Danh sách ảnh phục vụ đọc truyện và Daily Quiz
         [ValidateNever]
         public virtual ICollection<MangaImage> Images { get; set; } = new List<MangaImage>();

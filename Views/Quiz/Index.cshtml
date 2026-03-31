@@ -7,20 +7,39 @@
 
     <div id="quiz-intro" class="card bg-dark border-secondary p-5 shadow">
         <h2 class="text-warning fw-bold mb-4"><i class="bi bi-trophy"></i> DAILY QUIZ</h2>
-        <p class="lead">Nhìn hình đoán tên truyện. Đúng 10/10 nhận ngay 1 điểm thưởng!</p>
+        <p class="lead">Hoàn thành thử thách để nhận điểm thưởng mỗi ngày!</p>
 
-        @if (ViewBag.HasPlayed)
-        {
-            <div class="alert alert-info border-0">
-                <i class="bi bi-check-circle"></i> Bạn đã hoàn thành nhiệm vụ hôm nay. Hãy quay lại vào ngày mai!
+        <div class="row mt-4">
+            <div class="col-md-6 mb-3">
+                <div class="p-3 border border-secondary rounded h-100">
+                    <h5 class="text-info">Quiz Truyện Tranh</h5>
+                    <p class="small text-muted">Nhìn hình trong chương đoán tên truyện.</p>
+                    @if (ViewBag.HasPlayedManga != null && ViewBag.HasPlayedManga)
+                    {
+                        <button class="btn btn-secondary w-100 disabled"><i class="bi bi-check-circle"></i> Đã hoàn thành</button>
+                    }
+                    else
+                    {
+                        <button class="btn btn-primary w-100 fw-bold" onclick="startQuiz('Manga')"><i class="bi bi-play-fill"></i> Chơi ngay (1 Điểm)</button>
+                    }
+                </div>
             </div>
-        }
-        else
-        {
-            <button class="btn btn-primary btn-lg px-5 py-3 rounded-pill shadow" onclick="startQuiz()">
-                <i class="bi bi-play-fill"></i> Bắt đầu chơi ngay
-            </button>
-        }
+
+            <div class="col-md-6 mb-3">
+                <div class="p-3 border border-secondary rounded h-100">
+                    <h5 class="text-success">Quiz Truyện Chữ</h5>
+                    <p class="small text-muted">Nhìn ảnh bìa đoán tên bộ truyện chữ.</p>
+                    @if (ViewBag.HasPlayedNovel != null && ViewBag.HasPlayedNovel)
+                    {
+                        <button class="btn btn-secondary w-100 disabled"><i class="bi bi-check-circle"></i> Đã hoàn thành</button>
+                    }
+                    else
+                    {
+                        <button class="btn btn-success w-100 fw-bold" onclick="startQuiz('Novel')"><i class="bi bi-play-fill"></i> Chơi ngay (1 Điểm)</button>
+                    }
+                </div>
+            </div>
+        </div>
     </div>
 
     <div id="quiz-area" style="display:none;" class="card bg-dark border-secondary p-4 shadow">
@@ -46,17 +65,20 @@
         let questions = [];
         let currentIndex = 0;
         let correctCount = 0;
+        let currentQuizType = ''; // Lưu loại đang chơi
 
-        async function startQuiz() {
+        async function startQuiz(type) {
+            currentQuizType = type;
+            const url = type === 'Manga' ? '/Quiz/StartQuiz' : '/Quiz/StartNovelQuiz';
+
             try {
-                const response = await fetch('/Quiz/StartQuiz');
+                const response = await fetch(url);
                 if (!response.ok) {
                     const error = await response.text();
                     alert(error);
                     return;
                 }
                 questions = await response.json();
-
                 if (questions.length < 10) {
                     alert("Dữ liệu không đủ 10 câu hỏi để bắt đầu!");
                     return;
@@ -73,80 +95,83 @@
 
         function showQuestion() {
             const q = questions[currentIndex];
-
-            // Cập nhật thông tin tiến trình
             document.getElementById('question-number').innerText = `Câu hỏi ${currentIndex + 1}/10`;
             document.getElementById('progress-bar').style.width = `${((currentIndex + 1) / 10) * 100}%`;
             document.getElementById('quiz-image').src = q.imageUrl;
 
-            // Xử lý tạo 4 phương án
             let options = [q.mangaTitle];
             let otherTitles = [...new Set(questions.map(x => x.mangaTitle))].filter(t => t !== q.mangaTitle);
 
-            // Lấy ngẫu nhiên phương án nhiễu
             otherTitles.sort(() => Math.random() - 0.5);
             for (let i = 0; i < Math.min(3, otherTitles.length); i++) {
                 options.push(otherTitles[i]);
             }
 
-            // Chống treo nếu DB quá ít dữ liệu
             while(options.length < 4) {
                 options.push("Truyện bí ẩn " + (options.length + 1));
             }
 
-            // Trộn các phương án để đáp án đúng không luôn nằm đầu
             options.sort(() => Math.random() - 0.5);
-
-            // Render các nút bấm
             const optionsDiv = document.getElementById('options');
             optionsDiv.innerHTML = '';
 
             options.forEach(opt => {
                 const col = document.createElement('div');
                 col.className = 'col-md-6';
-
-                // Escape dấu nháy đơn để tránh lỗi JS
                 const safeOpt = opt.replace(/'/g, "\\'");
                 const safeCorrect = q.mangaTitle.replace(/'/g, "\\'");
 
                 col.innerHTML = `
                     <button class="btn btn-outline-info w-100 py-3 fw-bold shadow-sm"
-                            onclick="checkAnswer('${safeOpt}', '${safeCorrect}')">
+                            onclick="checkAnswer('${safeOpt}', '${safeCorrect}', this)">
                         ${opt}
                     </button>`;
                 optionsDiv.appendChild(col);
             });
         }
 
-        function checkAnswer(selected, correct) {
+        function checkAnswer(selected, correct, btn) {
+            // Khóa tất cả nút sau khi chọn
+            document.querySelectorAll('#options button').forEach(b => b.disabled = true);
+
             if (selected === correct) {
                 correctCount++;
+                btn.classList.replace('btn-outline-info', 'btn-success');
                 document.getElementById('score-badge').innerText = `Đúng: ${correctCount}`;
+            } else {
+                btn.classList.replace('btn-outline-info', 'btn-danger');
             }
 
-            currentIndex++;
-            if (currentIndex < 10) {
-                showQuestion();
-            } else {
-                finishQuiz();
-            }
+            setTimeout(() => {
+                currentIndex++;
+                if (currentIndex < 10) {
+                    showQuestion();
+                } else {
+                    finishQuiz();
+                }
+            }, 800); // Đợi 0.8s để user nhìn thấy đúng/sai rồi mới qua câu
         }
 
         async function finishQuiz() {
             if (correctCount === 10) {
                 const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
                 try {
+                    // Truyền thêm loại Quiz vào body
+                    const formData = new FormData();
+                    formData.append("type", currentQuizType);
+
                     const res = await fetch('/Quiz/ClaimReward', {
                         method: 'POST',
                         headers: {
                             "RequestVerificationToken": token,
                             "X-Requested-With": "XMLHttpRequest"
-                        }
+                        },
+                        body: formData
                     });
 
                     const data = await res.json();
                     if (res.ok) {
-                        alert("Tuyệt vời! " + data.message);
+                        alert(data.message);
                     } else {
                         alert(data.message || "Có lỗi xảy ra khi nhận thưởng.");
                     }
@@ -154,9 +179,8 @@
                     alert("Lỗi khi gửi yêu cầu nhận thưởng.");
                 }
             } else {
-                alert(`Kết quả: ${correctCount}/10. Bạn cần trả lời đúng tất cả 10 câu để nhận 1 điểm thưởng!`);
+                alert(`Kết quả: ${correctCount}/10. Bạn cần trả lời đúng tất cả 10 câu để nhận điểm thưởng!`);
             }
-            // Load lại trang để reset trạng thái
             location.reload();
         }
     </script>

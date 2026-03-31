@@ -8,6 +8,7 @@ namespace WEBCOMIC_FINALPROJECT_.Data
     {
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
 
+        // --- CÁC BẢNG GỐC TỪ GITHUB ---
         public DbSet<Manga> Mangas { get; set; }
         public DbSet<Genre> Genres { get; set; }
         public DbSet<SystemConfig> SystemConfigs { get; set; }
@@ -16,8 +17,17 @@ namespace WEBCOMIC_FINALPROJECT_.Data
         public DbSet<MangaImage> Images { get; set; } // Tên DbSet là Images
         public DbSet<QuizHistory> QuizHistories { get; set; }
         public DbSet<MangaImage> MangaImages { get; set; }
-
         public DbSet<ReadingHistory> ReadingHistories { get; set; }
+
+        // --- CÁC BẢNG MỚI THÊM VÀO ---
+        public DbSet<Novel> Novels { get; set; }
+        public DbSet<NovelChapter> NovelChapters { get; set; }
+        public DbSet<MangaComment> MangaComments { get; set; }
+        public DbSet<NovelComment> NovelComments { get; set; }
+        public DbSet<MangaRating> MangaRatings { get; set; }
+        public DbSet<MangaChapterRating> MangaChapterRatings { get; set; }
+        public DbSet<NovelRating> NovelRatings { get; set; }
+        public DbSet<NovelChapterRating> NovelChapterRatings { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {

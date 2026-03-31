@@ -7,6 +7,11 @@ using Microsoft.Extensions.Caching.Memory;
 using WEBCOMIC_FINALPROJECT_.Data;
 using WEBCOMIC_FINALPROJECT_.Models;
 using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
+using System.Collections.Generic;
+using System;
+
 namespace WEBCOMIC_FINALPROJECT_.Controllers
 {
     [Route("MangaManager/[action]/{id?}")]
@@ -109,36 +114,47 @@ namespace WEBCOMIC_FINALPROJECT_.Controllers
 
             if (manga == null) return NotFound();
 
+            // Lấy điểm đánh giá tổng bộ truyện
+            var ratings = await _context.MangaRatings.Where(r => r.MangaId == id).ToListAsync();
+            ViewBag.AvgRating = ratings.Any() ? ratings.Average(r => r.Score) : 0;
+
+            if (User.Identity.IsAuthenticated)
+            {
+                var currentUserId = _userManager.GetUserId(User);
+                ViewBag.UserRating = ratings.FirstOrDefault(r => r.UserId == currentUserId)?.Score ?? 0;
+            }
+            else
+            {
+                ViewBag.UserRating = 0;
+            }
+
             return View(manga);
         }
 
-        // KHẮC PHỤC LỖI 404: Hàm Read để xem nội dung chương
         [AllowAnonymous]
         public async Task<IActionResult> Read(int id)
         {
-            // 1. Lấy thông tin chương hiện tại kèm danh sách ảnh
             var chapter = await _context.Chapters
                 .Include(c => c.Manga)
                 .Include(c => c.Images)
                 .FirstOrDefaultAsync(c => c.Id == id);
 
             if (chapter == null) return NotFound();
+
             bool canRead = true;
+
             // KIỂM TRA CƠ CHẾ VIP
-            if (chapter.Manga.IsVipOnly) //
+            if (chapter.Manga.IsVipOnly)
             {
                 var currentUser = await _userManager.GetUserAsync(User);
-
-                // ĐIỀU KIỆN CHẶN: 
-                // Nếu chưa đăng nhập HOẶC (Không phải tác giả CỦA TRUYỆN NÀY VÀ không có VIP)
                 if (currentUser == null || (chapter.Manga.AuthorId != currentUser.Id && !currentUser.IsVip))
                 {
-                    canRead = false; // Đánh dấu là không được đọc
+                    canRead = false;
                 }
             }
             ViewBag.CanRead = canRead;
 
-            // 2. Tìm ID của chương trước và chương sau
+            // Chuyển chương
             var prevChapter = await _context.Chapters
                 .Where(c => c.MangaId == chapter.MangaId && c.Id < id)
                 .OrderByDescending(c => c.Id)
@@ -151,16 +167,130 @@ namespace WEBCOMIC_FINALPROJECT_.Controllers
                 .Select(c => c.Id)
                 .FirstOrDefaultAsync();
 
-            // 3. Truyền vào ViewBag để View sử dụng
             ViewBag.PrevId = prevChapter != 0 ? prevChapter : (int?)null;
             ViewBag.NextId = nextChapter != 0 ? nextChapter : (int?)null;
+
+            // Lấy danh sách bình luận
+            ViewBag.Comments = await _context.MangaComments
+                 .Include(c => c.User)
+                 .Where(c => c.ChapterId == id)
+                 .OrderByDescending(c => c.CreatedAt)
+                 .ToListAsync();
+
+            // Điểm đánh giá chương
+            var chapterRatings = await _context.MangaChapterRatings
+                .Where(r => r.ChapterId == id)
+                .ToListAsync();
+
+            ViewBag.AvgChapterRating = chapterRatings.Any() ? chapterRatings.Average(r => r.Score) : 0;
+
+            if (User.Identity.IsAuthenticated)
+            {
+                var currentUserId = _userManager.GetUserId(User);
+                ViewBag.UserChapterRating = chapterRatings.FirstOrDefault(r => r.UserId == currentUserId)?.Score ?? 0;
+            }
+            else
+            {
+                ViewBag.UserChapterRating = 0;
+            }
 
             return View(chapter);
         }
 
         // ==========================================
-        // 4. DUYỆT BÀI & XỬ LÝ CACHE
+        // 4. BÌNH LUẬN & ĐÁNH GIÁ (RATING)
         // ==========================================
+
+        [HttpPost]
+        [Authorize]
+        public async Task<IActionResult> RateManga(int id, int score)
+        {
+            var userId = _userManager.GetUserId(User);
+            var existingRating = await _context.MangaRatings
+                .FirstOrDefaultAsync(r => r.MangaId == id && r.UserId == userId);
+
+            if (existingRating != null)
+            {
+                existingRating.Score = score;
+            }
+            else
+            {
+                _context.MangaRatings.Add(new MangaRating { MangaId = id, UserId = userId, Score = score });
+            }
+            await _context.SaveChangesAsync();
+            return RedirectToAction("Details", new { id = id });
+        }
+
+        [HttpPost]
+        [Authorize]
+        public async Task<IActionResult> RateChapter(int chapterId, int score)
+        {
+            var userId = _userManager.GetUserId(User);
+            var existingRating = await _context.MangaChapterRatings
+                .FirstOrDefaultAsync(r => r.ChapterId == chapterId && r.UserId == userId);
+
+            if (existingRating != null)
+            {
+                existingRating.Score = score;
+            }
+            else
+            {
+                _context.MangaChapterRatings.Add(new MangaChapterRating
+                {
+                    ChapterId = chapterId,
+                    UserId = userId,
+                    Score = score
+                });
+            }
+            await _context.SaveChangesAsync();
+            return RedirectToAction("Read", new { id = chapterId });
+        }
+
+        [HttpPost]
+        [Authorize]
+        public async Task<IActionResult> PostComment(int chapterId, string content)
+        {
+            if (string.IsNullOrWhiteSpace(content)) return BadRequest();
+
+            var comment = new MangaComment
+            {
+                ChapterId = chapterId,
+                Content = content,
+                UserId = _userManager.GetUserId(User),
+                CreatedAt = DateTime.Now
+            };
+
+            _context.MangaComments.Add(comment);
+            await _context.SaveChangesAsync();
+            return RedirectToAction("Read", new { id = chapterId });
+        }
+
+        // ==========================================
+        // 5. CÁC TÍNH NĂNG KHÁC (TÌM KIẾM, UPLOAD, DUYỆT BÀI)
+        // ==========================================
+
+        [AllowAnonymous]
+        public async Task<IActionResult> Search(string query)
+        {
+            if (string.IsNullOrWhiteSpace(query))
+            {
+                return RedirectToAction("Index", "Home");
+            }
+
+            var results = await _context.Mangas
+                .Include(m => m.Genre)
+                .Where(m => m.IsApproved && m.Title.Contains(query))
+                .ToListAsync();
+
+            if (results == null || !results.Any())
+            {
+                TempData["Error"] = "Không tìm thấy truyện nào phù hợp với: " + query;
+                return RedirectToAction("Index", "Home");
+            }
+
+            ViewBag.Query = query;
+            return View(results);
+        }
 
         [Authorize(Roles = "Admin,Moderator")]
         public async Task<IActionResult> PendingList()
@@ -184,13 +314,14 @@ namespace WEBCOMIC_FINALPROJECT_.Controllers
             _context.Update(manga);
             await _context.SaveChangesAsync();
 
-            _cache.Remove("LatestMangas"); // Làm mới trang chủ
+            _cache.Remove("LatestMangas");
 
             TempData["Success"] = $"Đã duyệt: {manga.Title}";
             return RedirectToAction("PendingList");
         }
+
         [Authorize(Roles = "Author")]
-        public async Task<IActionResult> UploadImages(int id) // id ở đây là ChapterId
+        public async Task<IActionResult> UploadImages(int id)
         {
             var chapter = await _context.Chapters.Include(c => c.Manga).FirstOrDefaultAsync(c => c.Id == id);
             if (chapter == null) return NotFound();
@@ -198,12 +329,12 @@ namespace WEBCOMIC_FINALPROJECT_.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Author")]
         public async Task<IActionResult> UploadImages(int chapterId, List<IFormFile> files)
         {
             var chapter = await _context.Chapters.FindAsync(chapterId);
             if (chapter == null) return NotFound();
 
-            // Đường dẫn đến thư mục wwwroot/Images (như trong ảnh image_0c66a0.png)
             string folderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/Images/Mangas");
             if (!Directory.Exists(folderPath)) Directory.CreateDirectory(folderPath);
 
@@ -217,7 +348,6 @@ namespace WEBCOMIC_FINALPROJECT_.Controllers
                     await file.CopyToAsync(stream);
                 }
 
-                // Lưu vào bảng Image (hoặc MangaImage tùy model của bạn)
                 _context.MangaImages.Add(new MangaImage
                 {
                     ChapterId = chapterId,
@@ -226,32 +356,6 @@ namespace WEBCOMIC_FINALPROJECT_.Controllers
             }
             await _context.SaveChangesAsync();
             return RedirectToAction("Details", new { id = chapter.MangaId });
-        }
-        [AllowAnonymous]
-        public async Task<IActionResult> Search(string query)
-        {
-            // 1. Nếu người dùng không nhập gì, quay về trang chủ
-            if (string.IsNullOrWhiteSpace(query))
-            {
-                return RedirectToAction("Index", "Home");
-            }
-
-            // 2. Tìm kiếm truyện (chỉ lấy truyện đã được duyệt)
-            var results = await _context.Mangas
-                .Include(m => m.Genre)
-                .Where(m => m.IsApproved && m.Title.Contains(query))
-                .ToListAsync();
-
-            // 3. Nếu không tìm thấy truyện nào, trả về trang chủ kèm thông báo lỗi
-            if (results == null || !results.Any())
-            {
-                TempData["Error"] = "Không tìm thấy truyện nào phù hợp với: " + query;
-                return RedirectToAction("Index", "Home");
-            }
-
-            // 4. Nếu tìm thấy, trả về View hiển thị kết quả
-            ViewBag.Query = query;
-            return View(results);
         }
 
         [Authorize(Roles = "Admin,Moderator,Author")]

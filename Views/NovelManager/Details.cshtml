@@ -1,0 +1,84 @@
+﻿@model WEBCOMIC_FINALPROJECT_.Models.Novel
+@using Microsoft.AspNetCore.Identity
+@inject UserManager<WEBCOMIC_FINALPROJECT_.Models.ApplicationUser> UserManager
+
+@{
+    var user = await UserManager.GetUserAsync(User);
+    bool isOwner = user != null && Model.AuthorId == user.Id;
+    bool isAdminOrMod = User.IsInRole("Admin") || User.IsInRole("Moderator");
+}
+
+<div class="container mt-4 text-white">
+    <div class="row">
+        <div class="col-md-4">
+            <img src="@Model.ImageUrl" class="img-fluid rounded shadow w-100" />
+        </div>
+        <div class="col-md-8">
+            @if (isOwner)
+            {
+                <span class="badge bg-success mb-2">Truyện của bạn</span>
+            }
+            <h1 class="text-warning">@Model.Title</h1>
+
+            <div class="rating-box bg-dark p-3 rounded shadow-sm mb-4 border border-secondary">
+                <h5 class="text-white mb-2">Đánh giá bộ truyện này:</h5>
+                <div class="d-flex align-items-center">
+                    @* Hiển thị điểm trung bình *@
+                    <span class="badge bg-warning text-dark fs-5 me-3">
+                        ⭐ @(ViewBag.AvgRating?.ToString("0.0") ?? "0.0") / 5
+                    </span>
+
+                    @* Các ngôi sao để bấm *@
+                    <div class="star-rating">
+                        @for (int i = 1; i <= 5; i++)
+                        {
+                            @* Sửa lại form: Thêm asp-controller, asp-route-id và xóa thẻ input ẩn *@
+                            <form asp-controller="NovelManager" asp-action="RateNovel" asp-route-id="@Model.Id" method="post" style="display:inline;">
+                                <input type="hidden" name="score" value="@i" />
+                                <button type="submit" class="btn btn-link p-1" title="Đánh giá @i sao">
+                                    <i class="bi @(i <= (ViewBag.UserRating ?? 0) ? "bi-star-fill text-warning" : "bi-star text-secondary") fs-3"></i>
+                                </button>
+                            </form>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <p class="bg-dark p-3 border border-secondary rounded">@Model.Description</p>
+
+            @if (isOwner)
+            {
+                <a asp-controller="NovelManager" asp-action="Create" asp-route-novelId="@Model.Id"
+                   class="btn btn-success mb-3">
+                    <i class="bi bi-plus-circle"></i> THÊM CHƯƠNG
+                </a>
+            }
+            <a asp-controller="Home" asp-action="Index" class="btn btn-outline-light mb-3">Quay lại</a>
+
+            <h4 class="mt-4">Danh sách chương</h4>
+            <div class="list-group">
+                @foreach (var ch in Model.Chapters.OrderByDescending(c => c.Id))
+                {
+                    <div class="list-group-item list-group-item-action bg-dark text-white border-secondary d-flex justify-content-between align-items-center">
+                        <a asp-controller="NovelManager" asp-action="Read" asp-route-id="@ch.Id"
+                           class="text-info text-decoration-none flex-grow-1">
+                            @ch.Title
+                            <span class="text-muted small">@ch.CreatedAt.ToString("dd/MM/yyyy")</span>
+                        </a>
+
+                        @if (isOwner || isAdminOrMod)
+                        {
+                            <form asp-controller="NovelManager" asp-action="DeleteChapter" asp-route-id="@ch.Id"
+                                  method="post" onsubmit="return confirm('Bạn chắc chắn muốn xóa chương này?')">
+                                @Html.AntiForgeryToken()
+                                <button class="btn btn-sm btn-outline-danger border-0">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

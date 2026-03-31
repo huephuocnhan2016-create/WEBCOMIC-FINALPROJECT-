@@ -8,7 +8,9 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+
     <style>
+        /* Tùy chỉnh giao diện chung */
         body {
             background-color: #0b0c0d;
             color: white;
@@ -34,10 +36,30 @@
                 outline: none;
                 border-color: #ff0000;
             }
+
         /* Style cho icon chat nổi bật */
         .nav-link i.bi-chat-dots-fill {
             color: #0d6efd;
         }
+
+        /* Style cho hệ thống Đánh giá sao (Rating) */
+        .star-rating .btn-link {
+            text-decoration: none;
+            transition: transform 0.2s;
+        }
+
+            .star-rating .btn-link:hover {
+                transform: scale(1.3);
+            }
+
+        .bi-star-fill {
+            color: #ffc107;
+        }
+        /* Màu vàng cho sao đã chọn */
+        .bi-star {
+            color: #6c757d;
+        }
+        /* Màu xám cho sao chưa chọn */
     </style>
 </head>
 
@@ -57,7 +79,7 @@
 
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
                     <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                        @* --- MENU MỚI: LỊCH SỬ & CHAT --- *@
+                        @* --- MENU LỊCH SỬ & CHAT CỘNG ĐỒNG --- *@
                         <li class="nav-item">
                             <a class="nav-link text-white" asp-controller="Home" asp-action="History">
                                 <i class="bi bi-clock-history me-1"></i>Lịch sử
@@ -69,18 +91,29 @@
                             </a>
                         </li>
 
+                        @* --- PHÂN QUYỀN AUTHOR --- *@
                         @if (User.IsInRole("Author"))
                         {
                             <li class="nav-item">
-                                <a class="nav-link text-success" asp-controller="MangaManager" asp-action="CreateManga">Đăng truyện</a>
+                                <a class="nav-link text-success" asp-controller="NovelManager" asp-action="CreateNovel">Đăng truyện chữ</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link text-info" asp-controller="MangaManager" asp-action="CreateManga">Đăng truyện tranh</a>
                             </li>
                         }
+
+                        @* --- PHÂN QUYỀN MODERATOR --- *@
                         @if (User.IsInRole("Moderator"))
                         {
                             <li class="nav-item">
-                                <a class="nav-link text-warning" asp-controller="MangaManager" asp-action="PendingList">Duyệt bài</a>
+                                <a class="nav-link text-warning" asp-controller="MangaManager" asp-action="PendingList">Duyệt Manga</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link text-warning" asp-controller="NovelManager" asp-action="PendingList">Duyệt Novel</a>
                             </li>
                         }
+
+                        @* --- PHÂN QUYỀN ADMIN --- *@
                         @if (User.IsInRole("Admin"))
                         {
                             <li class="nav-item">
@@ -107,7 +140,7 @@
         </main>
     </div>
 
-    @* --- CẬP NHẬT MOBILE NAVIGATION --- *@
+    @* --- MOBILE NAVIGATION TỔNG HỢP --- *@
     <div class="fixed-bottom d-md-none bg-dark border-top border-secondary p-2 shadow-lg">
         <div class="d-flex justify-content-around text-center">
             <a asp-controller="Home" asp-action="Index" class="text-white text-decoration-none small">
@@ -118,6 +151,9 @@
             </a>
             <a asp-controller="Home" asp-action="CommunityChat" class="text-primary text-decoration-none small">
                 <i class="bi bi-chat-dots-fill fs-4"></i><br>Chat
+            </a>
+            <a asp-controller="Quiz" asp-action="Index" class="text-danger text-decoration-none small">
+                <i class="bi bi-controller fs-4"></i><br>Quiz
             </a>
             @if (User.Identity.IsAuthenticated)
             {
@@ -143,11 +179,11 @@
         $(document).ready(function() {
             @if (TempData["Success"] != null)
             {
-                <text>toastr.success('@TempData["Success"]');</text>
+                    <text>toastr.success('@TempData["Success"]');</text>
             }
             @if (TempData["Error"] != null)
             {
-                <text>toastr.error('@TempData["Error"]');</text>
+                    <text>toastr.error('@TempData["Error"]');</text>
             }
         });
     </script>

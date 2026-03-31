@@ -1,7 +1,7 @@
 ﻿@model IEnumerable<WEBCOMIC_FINALPROJECT_.Models.Manga>
 
 <div class="container mt-4">
-    @* Hiển thị thông báo lỗi nếu có (Ví dụ: khi người dùng không có quyền xem truyện VIP) *@
+    @* Hiển thị thông báo lỗi nếu có *@
     @if (TempData["Error"] != null)
     {
         <div class="alert alert-danger alert-dismissible fade show" role="alert">
@@ -10,11 +10,14 @@
         </div>
     }
 
+    <h3 class="mb-3 fw-bold text-uppercase border-bottom border-secondary pb-2 text-warning">Truyện Tranh Mới Cập Nhật</h3>
+
+    @* --- DANH SÁCH TRUYỆN TRANH (MANGA) --- *@
     <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
         @foreach (var item in Model)
         {
             <div class="col">
-                <div class="card h-100 shadow-sm border-0 position-relative overflow-hidden">
+                <div class="card h-100 shadow-sm border-0 position-relative overflow-hidden bg-dark text-white">
                     @* 1. HIỂN THỊ NHÃN VIP *@
                     @if (item.IsVipOnly)
                     {
@@ -25,10 +28,10 @@
                         </div>
                     }
 
-                    @* 2. ẢNH BÌA (Hỗ trợ cả link URL và ảnh tải lên) *@
+                    @* 2. ẢNH BÌA *@
                     <a asp-controller="MangaManager" asp-action="Details" asp-route-id="@item.Id">
                         <img src="@item.ImageUrl" class="card-img-top"
-                             style="height: 320px; object-submit: cover; transition: transform .3s;"
+                             style="height: 320px; object-fit: cover; transition: transform .3s;"
                              onmouseover="this.style.transform='scale(1.05)'"
                              onmouseout="this.style.transform='scale(1)'">
                     </a>
@@ -50,13 +53,13 @@
         }
     </div>
 
-    @* 3. PHÂN TRANG (Giữ nguyên logic của bạn nhưng tối ưu hiển thị) *@
+    @* --- PHÂN TRANG CHO TRUYỆN TRANH --- *@
     @if (ViewBag.TotalPages > 1)
     {
         <nav aria-label="Page navigation" class="mt-5">
             <ul class="pagination justify-content-center shadow-sm">
                 <li class="page-item @(ViewBag.CurrentPage == 1 ? "disabled" : "")">
-                    <a class="page-link" asp-action="Index"
+                    <a class="page-link bg-dark text-white border-secondary" asp-action="Index"
                        asp-route-page="@(ViewBag.CurrentPage - 1)"
                        asp-route-search="@ViewBag.Search">Trước</a>
                 </li>
@@ -64,18 +67,70 @@
                 @for (int i = 1; i <= ViewBag.TotalPages; i++)
                 {
                     <li class="page-item @(ViewBag.CurrentPage == i ? "active" : "")">
-                        <a class="page-link" asp-action="Index"
+                        <a class="page-link @(ViewBag.CurrentPage == i ? "bg-primary border-primary" : "bg-dark text-white border-secondary")"
+                           asp-action="Index"
                            asp-route-page="@i"
                            asp-route-search="@ViewBag.Search">@i</a>
                     </li>
                 }
 
                 <li class="page-item @(ViewBag.CurrentPage == ViewBag.TotalPages ? "disabled" : "")">
-                    <a class="page-link" asp-action="Index"
+                    <a class="page-link bg-dark text-white border-secondary" asp-action="Index"
                        asp-route-page="@(ViewBag.CurrentPage + 1)"
                        asp-route-search="@ViewBag.Search">Sau</a>
                 </li>
             </ul>
         </nav>
     }
+
+    @* --- DANH SÁCH TRUYỆN CHỮ (NOVEL) --- *@
+    <hr class="my-5 border-secondary" />
+    <h3 class="mt-4 mb-3 fw-bold text-uppercase border-bottom border-secondary pb-2 text-success">Truyện Chữ (Novel) Mới Cập Nhật</h3>
+
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4 pb-5">
+        @if (ViewBag.Novels != null)
+        {
+            foreach (var novel in ViewBag.Novels)
+            {
+                <div class="col">
+                    <div class="card h-100 shadow-sm border-0 position-relative overflow-hidden bg-dark text-white">
+
+                        @if (novel.IsVipOnly)
+                        {
+                            <div class="position-absolute top-0 end-0 m-2" style="z-index: 10;">
+                                <span class="badge bg-warning text-dark shadow-sm py-2 px-2">
+                                    <i class="bi bi-star-fill"></i> VIP
+                                </span>
+                            </div>
+                        }
+
+                        <a asp-controller="NovelManager" asp-action="Details" asp-route-id="@novel.Id">
+                            <img src="@novel.ImageUrl" class="card-img-top" alt="@novel.Title"
+                                 style="height: 320px; object-fit: cover; transition: transform .3s;"
+                                 onmouseover="this.style.transform='scale(1.05)'"
+                                 onmouseout="this.style.transform='scale(1)'">
+                        </a>
+                        <div class="card-body d-flex flex-column">
+                            <h5 class="card-title text-truncate mb-1" title="@novel.Title">@novel.Title</h5>
+
+                            <div class="mb-3">
+                                <span class="badge bg-success text-white">@novel.Genre?.Name</span>
+                            </div>
+
+                            <a asp-controller="NovelManager" asp-action="Details" asp-route-id="@novel.Id"
+                               class="btn @(novel.IsVipOnly ? "btn-warning" : "btn-success") mt-auto w-100 fw-bold">
+                                @(novel.IsVipOnly ? "Đọc truyện VIP" : "Đọc ngay")
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="col-12">
+                <p class="text-muted fst-italic">Hiện chưa có truyện chữ nào được cập nhật.</p>
+            </div>
+        }
+    </div>
 </div>

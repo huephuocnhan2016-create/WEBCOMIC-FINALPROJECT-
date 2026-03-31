@@ -1,0 +1,131 @@
+﻿@model WEBCOMIC_FINALPROJECT_.Models.NovelChapter
+
+@{
+    ViewData["Title"] = Model.Novel?.Title + " - " + Model.Title;
+}
+
+<div class="reader-container bg-dark text-white p-3">
+    <div class="reader-header container d-flex justify-content-between align-items-center mb-3">
+        <h4 class="m-0">
+            <a asp-controller="NovelManager" asp-action="Details" asp-route-id="@Model.NovelId"
+               class="text-decoration-none text-white">
+                <i class="bi bi-chevron-left"></i> @(Model.Novel?.Title ?? "Quay lại")
+            </a>
+            <small class="text-primary ms-2">-- @Model.Title</small>
+        </h4>
+    </div>
+
+    <div class="container" style="max-width: 800px;">
+        <div class="d-flex justify-content-center gap-3 mb-4">
+            @if (ViewBag.PrevId != null)
+            {
+                <a asp-action="Read" asp-route-id="@ViewBag.PrevId" class="btn btn-primary shadow-sm">
+                    <i class="bi bi-arrow-left"></i> Chương trước
+                </a>
+            }
+            @if (ViewBag.NextId != null)
+            {
+                <a asp-action="Read" asp-route-id="@ViewBag.NextId" class="btn btn-primary shadow-sm">
+                    Chương sau <i class="bi bi-arrow-right"></i>
+                </a>
+            }
+        </div>
+
+        <div class="novel-content bg-dark p-4 rounded border border-secondary"
+             style="font-size: 1.1rem; line-height: 2; white-space: pre-wrap;">
+            @Model.Content
+        </div>
+
+        <div class="d-flex justify-content-center gap-3 mt-4 pb-5">
+            @if (ViewBag.PrevId != null)
+            {
+                <a asp-action="Read" asp-route-id="@ViewBag.PrevId" class="btn btn-primary px-4">Trước</a>
+            }
+            @if (ViewBag.NextId != null)
+            {
+                <a asp-action="Read" asp-route-id="@ViewBag.NextId" class="btn btn-primary px-5 fw-bold shadow">CHƯƠNG TIẾP THEO</a>
+            }
+        </div>
+
+        @* --- PHẦN ĐÁNH GIÁ CHƯƠNG NOVEL --- *@
+        <div class="chapter-rating text-center mb-5 p-4 rounded bg-secondary bg-opacity-10 border border-secondary shadow-sm mx-auto">
+            <p class="text-white fs-5 mb-2 fw-bold">Bạn đánh giá chương này thế nào?</p>
+            <div class="d-flex justify-content-center align-items-center mb-2">
+                <span class="badge bg-warning text-dark fs-6 me-3 shadow-sm">
+                    ⭐ @(ViewBag.AvgChapterRating?.ToString("0.0") ?? "0.0")
+                </span>
+                <div class="star-rating d-inline-flex">
+                    @for (int i = 1; i <= 5; i++)
+                    {
+                        <form asp-controller="NovelManager" asp-action="RateNovelChapter" method="post" style="display:inline;" class="m-0">
+                            <input type="hidden" name="chapterId" value="@Model.Id" />
+                            <input type="hidden" name="score" value="@i" />
+                            <button type="submit" class="btn btn-link p-1 border-0 shadow-none" title="Đánh giá @i sao">
+                                <i class="bi @(i <= (ViewBag.UserChapterRating ?? 0) ? "bi-star-fill text-warning" : "bi-star text-secondary") fs-3"></i>
+                            </button>
+                        </form>
+                    }
+                </div>
+            </div>
+            @if (ViewBag.UserChapterRating != null && ViewBag.UserChapterRating > 0)
+            {
+                <small class="text-success mt-2 d-block"><i class="bi bi-check-circle-fill"></i> Bạn đã đánh giá @ViewBag.UserChapterRating sao.</small>
+            }
+        </div>
+        @* ---------------------------------- *@
+
+    </div>
+</div>
+
+<hr class="border-secondary mt-5">
+<div class="container mt-4 pb-5" style="max-width: 800px;">
+    <h4 class="text-white mb-4"><i class="bi bi-chat-dots"></i> Bình luận</h4>
+
+    @if (User.Identity.IsAuthenticated)
+    {
+        <form asp-action="PostComment" method="post" class="mb-4">
+            <input type="hidden" name="chapterId" value="@Model.Id" />
+            <div class="form-group">
+                <textarea name="content" class="form-control bg-dark text-white border-secondary"
+                      rows="3" placeholder="Viết bình luận của bạn..."></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary mt-2">Gửi bình luận</button>
+        </form>
+    }
+    else
+    {
+        <p class="text-muted">Vui lòng <a asp-area="Identity" asp-page="/Account/Login">đăng nhập</a> để bình luận.</p>
+    }
+
+    <div class="comment-list">
+        @if (ViewBag.Comments != null && ((IEnumerable<dynamic>)ViewBag.Comments).Any())
+        {
+            foreach (var comment in ViewBag.Comments)
+            {
+                <div class="d-flex mb-3 p-3 bg-secondary bg-opacity-10 rounded">
+                    <div class="flex-grow-1">
+                        <div class="d-flex justify-content-between">
+                            <strong class="text-info">@comment.User?.UserName</strong>
+                            <small class="text-muted">@comment.CreatedAt.ToString("dd/MM/yyyy HH:mm")</small>
+                        </div>
+                        <p class="mb-0 text-white-50">@comment.Content</p>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <p class="text-muted italic">Chưa có bình luận nào. Hãy là người đầu tiên!</p>
+        }
+    </div>
+</div>
+
+<style>
+    .reader-container {
+        min-height: 100vh;
+    }
+
+    .novel-content {
+        font-family: 'Times New Roman', Times, serif;
+    }
+</style>

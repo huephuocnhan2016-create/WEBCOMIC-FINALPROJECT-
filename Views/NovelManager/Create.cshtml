@@ -1,0 +1,41 @@
+﻿@model WEBCOMIC_FINALPROJECT_.Models.NovelChapter
+
+<div class="container mt-4 text-white">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow bg-dark border-secondary">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0"><i class="bi bi-journal-plus"></i> Thêm chương mới</h4>
+                </div>
+                <div class="card-body">
+                    <form asp-controller="NovelManager" asp-action="Create" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="NovelId" value="@ViewBag.NovelId" />
+
+                        <div class="mb-3">
+                            <label asp-for="Title" class="form-label fw-bold">Tên chương (VD: Chương 1)</label>
+                            <input asp-for="Title" class="form-control bg-secondary text-white border-0" required />
+                            <span asp-validation-for="Title" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Content" class="form-label fw-bold">Nội dung chương</label>
+                            <textarea asp-for="Content" class="form-control bg-secondary text-white border-0" rows="20" placeholder="Nhập nội dung truyện tại đây..."></textarea>
+                            <span asp-validation-for="Content" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-check mb-3">
+                            <input asp-for="IsVipOnly" class="form-check-input" type="checkbox" />
+                            <label class="form-check-label">Chương VIP</label>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-success flex-grow-1">Xuất bản chương</button>
+                            <a asp-action="Details" asp-controller="NovelManager" asp-route-id="@ViewBag.NovelId" class="btn btn-outline-light">Hủy</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
