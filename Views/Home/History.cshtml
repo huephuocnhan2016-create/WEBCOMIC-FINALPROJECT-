@@ -1,0 +1,40 @@
+﻿@model IEnumerable<WEBCOMIC_FINALPROJECT_.Models.ReadingHistory>
+
+@{
+    ViewData["Title"] = "Lịch sử đọc truyện";
+}
+
+<div class="container mt-4">
+    <h2 class="fw-bold mb-4"><i class="bi bi-clock-history"></i> Truyện bạn đã xem gần đây</h2>
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info">Bạn chưa đọc bộ truyện nào. Hãy khám phá ngay nhé!</div>
+    }
+    else
+    {
+        <div class="row row-cols-1 row-cols-md-2 g-4">
+            @foreach (var item in Model)
+            {
+                <div class="col">
+                    <div class="card h-100 shadow-sm border-0">
+                        <div class="row g-0">
+                            <div class="col-4">
+                                <img src="@item.Manga?.ImageUrl" class="img-fluid rounded-start" style="height: 150px; width: 100%; object-fit: cover;">
+                            </div>
+                            <div class="col-8">
+                                <div class="card-body">
+                                    <h5 class="card-title text-truncate">@item.Manga?.Title</h5>
+                                    <p class="card-text text-muted small">
+                                        <i class="bi bi-calendar3"></i> Xem lần cuối: @item.LastRead.ToString("dd/MM/yyyy HH:mm")
+                                    </p>
+                                    <a asp-controller="Manga" asp-action="Details" asp-route-id="@item.MangaId" class="btn btn-sm btn-outline-primary">Đọc tiếp</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>

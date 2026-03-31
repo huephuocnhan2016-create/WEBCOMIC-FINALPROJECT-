@@ -1,0 +1,33 @@
+﻿@model WEBCOMIC_FINALPROJECT_.Models.Chapter
+
+<div class="container mt-4 text-white">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow bg-dark border-secondary">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0"><i class="bi bi-journal-plus"></i> Thêm chương mới</h4>
+                </div>
+                <div class="card-body">
+                    <form asp-controller="MangaManager" asp-action="Create" method="post">
+                        @Html.AntiForgeryToken()
+
+                        @* SỬA TẠI ĐÂY: Dùng input hidden thủ công để đảm bảo chắc chắn MangaId được gửi đi *@
+                        <input type="hidden" name="MangaId" value="@ViewBag.MangaId" />
+
+                        <div class="mb-3">
+                            <label asp-for="Title" class="form-label fw-bold">Tên chương (VD: Chapter 1)</label>
+                            <input asp-for="Title" class="form-control bg-secondary text-white border-0" required />
+                            <span asp-validation-for="Title" class="text-danger"></span>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-success flex-grow-1">Tạo chương</button>
+                            @* SỬA TẠI ĐÂY: Truyền đúng tham số 'id' cho hàm Details *@
+                            <a asp-action="Details" asp-controller="MangaManager" asp-route-id="@ViewBag.MangaId" class="btn btn-outline-light">Hủy</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

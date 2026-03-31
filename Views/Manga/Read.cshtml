@@ -1,0 +1,87 @@
+﻿@model WEBCOMIC_FINALPROJECT_.Models.Chapter
+
+@{
+    ViewData["Title"] = Model.Manga?.Title + " - " + Model.Title;
+}
+
+<div class="reader-container bg-dark text-white p-3">
+    @* Header điều hướng *@
+    <div class="reader-header container d-flex justify-content-between align-items-center mb-3">
+        <h4 class="m-0">
+            @* SỬA LỖI 404: Thêm asp-controller="MangaManager" *@
+            <a asp-controller="MangaManager" asp-action="Details" asp-route-id="@Model.MangaId" class="text-decoration-none text-white">
+                <i class="bi bi-chevron-left"></i> @(Model.Manga?.Title ?? "Quay lại")
+            </a>
+            <small class="text-primary ms-2">- @Model.Title</small>
+        </h4>
+
+        @* Chuyển chương nhanh bằng Select *@
+        <select onchange="location = this.value;" class="form-select w-auto bg-secondary text-white border-0 shadow-none">
+            @if (ViewBag.AllChapters != null)
+            {
+                foreach (var ch in (IEnumerable<WEBCOMIC_FINALPROJECT_.Models.Chapter>)ViewBag.AllChapters)
+                {
+                    <!option value="@Url.Action("Read", "MangaManager", new { id = ch.Id })" @(ch.Id == Model.Id ? "selected" : "")>
+                    @ch.Title
+                    </!option>
+                }
+            }
+        </select>
+    </div>
+
+    @* Nội dung hình ảnh truyện *@
+    <div class="manga-images text-center">
+        @if (Model.Images != null && Model.Images.Any())
+        {
+            foreach (var img in Model.Images.OrderBy(x => x.Order))
+            {
+                <img src="@img.Url" class="img-fluid mb-2 shadow-lg" loading="lazy"
+                     style="max-width: 900px; display: block; margin: 0 auto;" alt="Page @img.Order">
+            }
+        }
+        else
+        {
+            <div class="alert alert-info mt-5 d-inline-block">Chương này đang được cập nhật hình ảnh...</div>
+        }
+    </div>
+
+    @* Footer điều hướng chương *@
+    <div class="reader-footer mt-4 pb-5 text-center">
+        @* Nút Chương trước *@
+        <a asp-controller="MangaManager" asp-action="Read" asp-route-id="@ViewBag.PrevId"
+           class="btn btn-outline-light btn-lg me-2 @(ViewBag.PrevId == null ? "disabled" : "")">
+            <i class="bi bi-arrow-left"></i> Chương trước
+        </a>
+
+        @* Nút Chương sau *@
+        <a asp-controller="MangaManager" asp-action="Read" asp-route-id="@ViewBag.NextId"
+           class="btn btn-primary btn-lg @(ViewBag.NextId == null ? "disabled" : "")">
+            Chương sau <i class="bi bi-arrow-right"></i>
+        </a>
+    </div>
+</div>
+
+<style>
+    .reader-container {
+        min-height: 100vh;
+    }
+
+    body {
+        background-color: #121212 !important;
+    }
+
+    .manga-images img {
+        border: 1px solid #333;
+        transition: transform 0.2s;
+    }
+
+        .manga-images img:hover {
+            border-color: #0d6efd;
+        }
+
+    .page-link, .page-item.disabled .page-link {
+        background-color: #2b2b2b;
+        border: none;
+        color: white;
+    }
+</style>

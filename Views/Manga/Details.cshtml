@@ -1,0 +1,74 @@
+﻿@model WEBCOMIC_FINALPROJECT_.Models.Manga
+
+@{
+    ViewData["Title"] = "Chi tiết: " + Model.Title;
+}
+
+<div class="container mt-4">
+    <div class="row">
+        @* Cột 1: Ảnh bìa truyện *@
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0">
+                <img src="@Model.ImageUrl" class="card-img-top rounded" alt="@Model.Title" style="object-fit: cover; max-height: 500px;">
+            </div>
+        </div>
+
+        @* Cột 2: Thông tin chi tiết *@
+        <div class="col-md-8">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index" class="text-danger">Trang chủ</a></li>
+                    <li class="breadcrumb-item active text-white" aria-current="page">@Model.Title</li>
+                </ol>
+            </nav>
+
+            <h1 class="display-5 fw-bold text-danger">@Model.Title</h1>
+
+            <div class="d-flex gap-3 mb-3">
+                <span class="badge bg-info text-dark p-2"><i class="bi bi-tag-fill"></i> @Model.Genre?.Name</span>
+                <span class="text-muted"><i class="bi bi-eye"></i> @Model.ViewCount lượt xem</span>
+                @if (Model.IsVipOnly)
+                {
+                    <span class="badge bg-warning text-dark p-2"><i class="bi bi-star-fill"></i> VIP</span>
+                }
+            </div>
+
+            <p class="fs-5"><strong>Tác giả:</strong> @(string.IsNullOrEmpty(Model.AuthorName) ? "Đang cập nhật" : Model.AuthorName)</p>
+
+            <div class="card bg-dark border-secondary mt-4">
+                <div class="card-body">
+                    <h5 class="card-title text-danger fw-bold">Nội dung tóm tắt</h5>
+                    <p class="card-text text-light">@Model.Description</p>
+                </div>
+            </div>
+
+            @* Danh sách chương (Chapters) *@
+            <div class="mt-5">
+                <h4 class="fw-bold text-white mb-3"><i class="bi bi-list-stars"></i> Danh sách chương truyện</h4>
+                <div class="list-group shadow-sm" style="max-height: 400px; overflow-y: auto;">
+                    @if (Model.Chapters != null && Model.Chapters.Any())
+                    {
+                        @foreach (var chapter in Model.Chapters.OrderByDescending(c => c.ChapterNumber))
+                        {
+                            <a href="#" class="list-group-item list-group-item-action bg-dark text-white border-secondary d-flex justify-content-between align-items-center">
+                                <span>Chương @chapter.ChapterNumber: @chapter.Title</span>
+                                <small class="text-muted">Mới nhất</small>
+                            </a>
+                        }
+                    }
+                    else
+                    {
+                        <div class="alert alert-secondary border-0">Truyện này hiện chưa có chương nào.</div>
+                    }
+                </div>
+            </div>
+
+            <div class="mt-4 pb-5">
+                <a asp-action="Index" class="btn btn-outline-light"><i class="bi bi-arrow-left"></i> Quay lại</a>
+                <button class="btn @(Model.IsVipOnly ? "btn-warning" : "btn-danger") fw-bold px-5 ms-2">
+                    @(Model.IsVipOnly ? "ĐỌC TRUYỆN VIP" : "ĐỌC NGAY")
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

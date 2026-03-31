@@ -1,0 +1,163 @@
+﻿@{
+    ViewData["Title"] = "Daily Quiz";
+}
+
+<div class="container mt-5 text-center text-white" style="max-width: 800px;">
+    @Html.AntiForgeryToken()
+
+    <div id="quiz-intro" class="card bg-dark border-secondary p-5 shadow">
+        <h2 class="text-warning fw-bold mb-4"><i class="bi bi-trophy"></i> DAILY QUIZ</h2>
+        <p class="lead">Nhìn hình đoán tên truyện. Đúng 10/10 nhận ngay 1 điểm thưởng!</p>
+
+        @if (ViewBag.HasPlayed)
+        {
+            <div class="alert alert-info border-0">
+                <i class="bi bi-check-circle"></i> Bạn đã hoàn thành nhiệm vụ hôm nay. Hãy quay lại vào ngày mai!
+            </div>
+        }
+        else
+        {
+            <button class="btn btn-primary btn-lg px-5 py-3 rounded-pill shadow" onclick="startQuiz()">
+                <i class="bi bi-play-fill"></i> Bắt đầu chơi ngay
+            </button>
+        }
+    </div>
+
+    <div id="quiz-area" style="display:none;" class="card bg-dark border-secondary p-4 shadow">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4 id="question-number" class="m-0 text-info">Câu hỏi 1/10</h4>
+            <span class="badge bg-success py-2 px-3" id="score-badge">Đúng: 0</span>
+        </div>
+
+        <div class="progress mb-4" style="height: 12px;">
+            <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated bg-warning" style="width: 10%"></div>
+        </div>
+
+        <div class="image-container mb-4 border border-secondary rounded overflow-hidden bg-black d-flex align-items-center justify-content-center" style="height: 400px; background-color: #000;">
+            <img id="quiz-image" src="" class="img-fluid" style="max-height: 100%; object-fit: contain;">
+        </div>
+
+        <div id="options" class="row g-3"></div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let questions = [];
+        let currentIndex = 0;
+        let correctCount = 0;
+
+        async function startQuiz() {
+            try {
+                const response = await fetch('/Quiz/StartQuiz');
+                if (!response.ok) {
+                    const error = await response.text();
+                    alert(error);
+                    return;
+                }
+                questions = await response.json();
+
+                if (questions.length < 10) {
+                    alert("Dữ liệu không đủ 10 câu hỏi để bắt đầu!");
+                    return;
+                }
+
+                document.getElementById('quiz-intro').style.display = 'none';
+                document.getElementById('quiz-area').style.display = 'block';
+                showQuestion();
+            } catch (e) {
+                console.error(e);
+                alert("Lỗi kết nối máy chủ. Vui lòng thử lại!");
+            }
+        }
+
+        function showQuestion() {
+            const q = questions[currentIndex];
+
+            // Cập nhật thông tin tiến trình
+            document.getElementById('question-number').innerText = `Câu hỏi ${currentIndex + 1}/10`;
+            document.getElementById('progress-bar').style.width = `${((currentIndex + 1) / 10) * 100}%`;
+            document.getElementById('quiz-image').src = q.imageUrl;
+
+            // Xử lý tạo 4 phương án
+            let options = [q.mangaTitle];
+            let otherTitles = [...new Set(questions.map(x => x.mangaTitle))].filter(t => t !== q.mangaTitle);
+
+            // Lấy ngẫu nhiên phương án nhiễu
+            otherTitles.sort(() => Math.random() - 0.5);
+            for (let i = 0; i < Math.min(3, otherTitles.length); i++) {
+                options.push(otherTitles[i]);
+            }
+
+            // Chống treo nếu DB quá ít dữ liệu
+            while(options.length < 4) {
+                options.push("Truyện bí ẩn " + (options.length + 1));
+            }
+
+            // Trộn các phương án để đáp án đúng không luôn nằm đầu
+            options.sort(() => Math.random() - 0.5);
+
+            // Render các nút bấm
+            const optionsDiv = document.getElementById('options');
+            optionsDiv.innerHTML = '';
+
+            options.forEach(opt => {
+                const col = document.createElement('div');
+                col.className = 'col-md-6';
+
+                // Escape dấu nháy đơn để tránh lỗi JS
+                const safeOpt = opt.replace(/'/g, "\\'");
+                const safeCorrect = q.mangaTitle.replace(/'/g, "\\'");
+
+                col.innerHTML = `
+                    <button class="btn btn-outline-info w-100 py-3 fw-bold shadow-sm"
+                            onclick="checkAnswer('${safeOpt}', '${safeCorrect}')">
+                        ${opt}
+                    </button>`;
+                optionsDiv.appendChild(col);
+            });
+        }
+
+        function checkAnswer(selected, correct) {
+            if (selected === correct) {
+                correctCount++;
+                document.getElementById('score-badge').innerText = `Đúng: ${correctCount}`;
+            }
+
+            currentIndex++;
+            if (currentIndex < 10) {
+                showQuestion();
+            } else {
+                finishQuiz();
+            }
+        }
+
+        async function finishQuiz() {
+            if (correctCount === 10) {
+                const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+                try {
+                    const res = await fetch('/Quiz/ClaimReward', {
+                        method: 'POST',
+                        headers: {
+                            "RequestVerificationToken": token,
+                            "X-Requested-With": "XMLHttpRequest"
+                        }
+                    });
+
+                    const data = await res.json();
+                    if (res.ok) {
+                        alert("Tuyệt vời! " + data.message);
+                    } else {
+                        alert(data.message || "Có lỗi xảy ra khi nhận thưởng.");
+                    }
+                } catch (e) {
+                    alert("Lỗi khi gửi yêu cầu nhận thưởng.");
+                }
+            } else {
+                alert(`Kết quả: ${correctCount}/10. Bạn cần trả lời đúng tất cả 10 câu để nhận 1 điểm thưởng!`);
+            }
+            // Load lại trang để reset trạng thái
+            location.reload();
+        }
+    </script>
+}

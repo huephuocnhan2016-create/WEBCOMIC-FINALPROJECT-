@@ -1,0 +1,73 @@
+﻿@model List<WEBCOMIC_FINALPROJECT_.Controllers.UserWithRolesViewModel>
+
+<div class="container mt-4">
+    <h2 class="text-white bg-danger p-3 rounded shadow-sm">
+        <i class="bi bi-people-fill"></i> Quản Lý Thành Viên
+    </h2>
+
+    <div class="card bg-dark text-white border-secondary mt-3 shadow">
+        <div class="table-responsive">
+            <table class="table table-dark table-hover mb-0">
+                <thead>
+                    <tr class="text-secondary">
+                        <th>Email / Username</th>
+                        <th>Điểm Thưởng</th>
+                        <th>Quyền Hiện Tại</th>
+                        <th class="text-center">Thay Đổi Quyền</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td class="align-middle">
+                                <div class="fw-bold">@item.User.Email</div>
+                                <small class="text-muted">ID: @item.User.Id.Substring(0, 8)...</small>
+                            </td>
+                            <td class="align-middle">
+                                <span class="badge bg-info text-dark">
+                                    <i class="bi bi-star-fill"></i> @item.User.RewardPoints
+                                </span>
+                            </td>
+                            <td class="align-middle">
+                                @if (item.Roles.Any())
+                                {
+                                    @foreach (var role in item.Roles)
+                                    {
+                                        var badgeClass = role switch
+                                        {
+                                            "Admin" => "bg-danger",
+                                            "Moderator" => "bg-warning text-dark",
+                                            "Author" => "bg-success",
+                                            _ => "bg-secondary"
+                                        };
+                                        <span class="badge @badgeClass me-1">@role</span>
+                                    }
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">No Role</span>
+                                }
+                            </td>
+                            <td class="align-middle">
+                                <form asp-action="ChangeRole" method="post" class="d-flex gap-2 justify-content-center">
+                                    <input type="hidden" name="userId" value="@item.User.Id" />
+                                    <select name="roleName" class="form-select form-select-sm bg-secondary text-white border-0" style="width: 130px;">
+                                        @foreach (var role in ViewBag.AllRoles)
+                                        {
+                                            // Tự động chọn quyền đầu tiên của user trong danh sách dropdown
+                                            <option value="@role" selected="@(item.Roles.Contains(role))">@role</option>
+                                        }
+                                    </select>
+                                    <button type="submit" class="btn btn-sm btn-primary px-3">
+                                        <i class="bi bi-save"></i> Lưu
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

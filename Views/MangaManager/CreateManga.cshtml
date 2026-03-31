@@ -1,0 +1,63 @@
+﻿@model WEBCOMIC_FINALPROJECT_.Models.Manga
+
+<div class="container mt-4 text-white">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow bg-dark border-secondary">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Đăng truyện mới</h4>
+                </div>
+                <div class="card-body">
+                    @* ĐÃ SỬA: asp-action trỏ đúng về hàm CreateManga để lưu vào bảng Mangas *@
+                    <form asp-controller="MangaManager" asp-action="CreateManga" method="post">
+                        @Html.AntiForgeryToken()
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                        <div class="mb-3">
+                            <label asp-for="Title" class="form-label">Tên bộ truyện</label>
+                            <input asp-for="Title" class="form-control bg-secondary text-white border-0" placeholder="Nhập tên truyện..." required />
+                            <span asp-validation-for="Title" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="ImageUrl" class="form-label">Link ảnh bìa (URL)</label>
+                            <input asp-for="ImageUrl" class="form-control bg-secondary text-white border-0" placeholder="https://..." required />
+                            <small class="text-info">Lưu ý: Ảnh này sẽ được dùng làm câu hỏi trong Daily Quiz.</small>
+                            <span asp-validation-for="ImageUrl" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Thể loại</label>
+                            <select asp-for="GenreId" class="form-select bg-secondary text-white border-0" asp-items="@ViewBag.GenreList" required>
+                                <option value="">-- Chọn thể loại --</option>
+                            </select>
+                            <span asp-validation-for="GenreId" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-check mb-3">
+                            <input asp-for="IsVipOnly" class="form-check-input" type="checkbox" id="vipCheck">
+                            <label class="form-check-label" for="vipCheck">Đây là truyện VIP</label>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Description" class="form-label fw-bold">Mô tả bộ truyện</label>
+                            <textarea asp-for="Description" class="form-control bg-secondary text-white border-0" rows="4" placeholder="Nhập nội dung tóm tắt của truyện..."></textarea>
+                            <span asp-validation-for="Description" class="text-danger"></span>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary flex-grow-1">Gửi yêu cầu duyệt</button>
+                            <a asp-action="Index" asp-controller="Home" class="btn btn-outline-light">Hủy</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}
