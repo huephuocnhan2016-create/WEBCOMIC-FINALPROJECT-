@@ -18,7 +18,7 @@ namespace WEBCOMIC_FINALPROJECT_.Data
         public DbSet<QuizHistory> QuizHistories { get; set; }
         public DbSet<MangaImage> MangaImages { get; set; }
         public DbSet<ReadingHistory> ReadingHistories { get; set; }
-
+        public DbSet<ChatMessage> ChatMessages { get; set; }
         // --- CÁC BẢNG MỚI THÊM VÀO ---
         public DbSet<Novel> Novels { get; set; }
         public DbSet<NovelChapter> NovelChapters { get; set; }

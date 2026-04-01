@@ -33,6 +33,7 @@ namespace WEBCOMIC_FINALPROJECT_.Controllers
         }
 
         // 2. XEM CHI TIẾT TRUYỆN & LƯU LỊCH SỬ ĐỌC
+        // 2. XEM CHI TIẾT TRUYỆN & LƯU LỊCH SỬ ĐỌC
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null) return NotFound();
@@ -44,7 +45,7 @@ namespace WEBCOMIC_FINALPROJECT_.Controllers
 
             if (manga == null) return NotFound();
 
-            // --- TĂNG LƯỢT XEM (Phục vụ mục Truyện Hot) ---
+            // --- TĂNG LƯỢT XEM ---
             manga.ViewCount++;
             _context.Update(manga);
 
@@ -57,6 +58,7 @@ namespace WEBCOMIC_FINALPROJECT_.Controllers
 
                 if (existingHistory == null)
                 {
+                    // Nếu chưa có thì thêm mới
                     _context.ReadingHistories.Add(new ReadingHistory
                     {
                         UserId = userId,
@@ -66,12 +68,15 @@ namespace WEBCOMIC_FINALPROJECT_.Controllers
                 }
                 else
                 {
-                    // Nếu đã đọc rồi thì cập nhật lại thời gian mới nhất lên đầu
+                    // Nếu đã đọc rồi thì cập nhật lại thời gian và đánh dấu là Đã Thay Đổi
                     existingHistory.LastRead = DateTime.Now;
+                    _context.Entry(existingHistory).State = EntityState.Modified; // Dòng quan trọng để ép buộc cập nhật
                 }
             }
 
+            // Lưu tất cả thay đổi (ViewCount và ReadingHistory) vào Database
             await _context.SaveChangesAsync();
+
             return View(manga);
         }
 

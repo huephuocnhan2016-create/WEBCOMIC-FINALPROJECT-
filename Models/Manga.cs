@@ -17,7 +17,11 @@ namespace WEBCOMIC_FINALPROJECT_.Models
         public string Description { get; set; }
 
         [Required(ErrorMessage = "Vui lòng nhập URL ảnh bìa")]
-        public string ImageUrl { get; set; }
+        public string? ImageUrl { get; set; } // Cho phép null nếu chưa chọn ảnh
+
+        [NotMapped] // Đánh dấu không tạo cột trong Database
+        [ValidateNever]
+        public IFormFile? ImageFile { get; set; }
 
         // Lượt xem - Thêm dòng này để hết lỗi 'ViewCount'
         [Display(Name = "Lượt xem")]

@@ -12,8 +12,8 @@ using WEBCOMIC_FINALPROJECT_.Data;
 namespace WEBCOMIC_FINALPROJECT_.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260324162743_UpdateMangaAndQuizSchema")]
-    partial class UpdateMangaAndQuizSchema
+    [Migration("20260401063449_a")]
+    partial class a
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -240,6 +240,9 @@ namespace WEBCOMIC_FINALPROJECT_.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<int>("ChapterNumber")
+                        .HasColumnType("int");
+
                     b.Property<string>("Content")
                         .HasColumnType("nvarchar(max)");
 
@@ -260,6 +263,30 @@ namespace WEBCOMIC_FINALPROJECT_.Migrations
                     b.ToTable("Chapters");
                 });
 
+            modelBuilder.Entity("WEBCOMIC_FINALPROJECT_.Models.ChatMessage", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("SentAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("User")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ChatMessages");
+                });
+
             modelBuilder.Entity("WEBCOMIC_FINALPROJECT_.Models.Genre", b =>
                 {
                     b.Property<int>("Id")
@@ -278,6 +305,162 @@ namespace WEBCOMIC_FINALPROJECT_.Migrations
                 });
 
             modelBuilder.Entity("WEBCOMIC_FINALPROJECT_.Models.Manga", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AuthorId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("AuthorName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("GenreId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ImageUrl")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsApproved")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsVipOnly")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<int>("ViewCount")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GenreId");
+
+                    b.ToTable("Mangas");
+                });
+
+            modelBuilder.Entity("WEBCOMIC_FINALPROJECT_.Models.MangaChapterRating", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ChapterId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Score")
+                        .HasColumnType("int");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ChapterId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("MangaChapterRatings");
+                });
+
+            modelBuilder.Entity("WEBCOMIC_FINALPROJECT_.Models.MangaComment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ChapterId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ChapterId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("MangaComments");
+                });
+
+            modelBuilder.Entity("WEBCOMIC_FINALPROJECT_.Models.MangaImage", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ChapterId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ChapterId");
+
+                    b.ToTable("Images", (string)null);
+                });
+
+            modelBuilder.Entity("WEBCOMIC_FINALPROJECT_.Models.MangaRating", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("MangaId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Score")
+                        .HasColumnType("int");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MangaId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("MangaRatings");
+                });
+
+            modelBuilder.Entity("WEBCOMIC_FINALPROJECT_.Models.Novel", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -313,10 +496,10 @@ namespace WEBCOMIC_FINALPROJECT_.Migrations
 
                     b.HasIndex("GenreId");
 
-                    b.ToTable("Mangas");
+                    b.ToTable("Novels");
                 });
 
-            modelBuilder.Entity("WEBCOMIC_FINALPROJECT_.Models.MangaImage", b =>
+            modelBuilder.Entity("WEBCOMIC_FINALPROJECT_.Models.NovelChapter", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -324,21 +507,113 @@ namespace WEBCOMIC_FINALPROJECT_.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("ChapterId")
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsVipOnly")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("NovelId")
                         .HasColumnType("int");
 
-                    b.Property<int>("Order")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Url")
+                    b.Property<string>("Title")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ChapterId");
+                    b.HasIndex("NovelId");
 
-                    b.ToTable("Images", (string)null);
+                    b.ToTable("NovelChapters");
+                });
+
+            modelBuilder.Entity("WEBCOMIC_FINALPROJECT_.Models.NovelChapterRating", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("NovelChapterId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Score")
+                        .HasColumnType("int");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NovelChapterId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("NovelChapterRatings");
+                });
+
+            modelBuilder.Entity("WEBCOMIC_FINALPROJECT_.Models.NovelComment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("NovelChapterId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NovelChapterId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("NovelComments");
+                });
+
+            modelBuilder.Entity("WEBCOMIC_FINALPROJECT_.Models.NovelRating", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("NovelId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Score")
+                        .HasColumnType("int");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NovelId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("NovelRatings");
                 });
 
             modelBuilder.Entity("WEBCOMIC_FINALPROJECT_.Models.QuizHistory", b =>
@@ -352,6 +627,10 @@ namespace WEBCOMIC_FINALPROJECT_.Migrations
                     b.Property<DateTime>("DatePlayed")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("QuizType")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("UserId")
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
@@ -361,6 +640,31 @@ namespace WEBCOMIC_FINALPROJECT_.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("QuizHistories");
+                });
+
+            modelBuilder.Entity("WEBCOMIC_FINALPROJECT_.Models.ReadingHistory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("LastRead")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("MangaId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MangaId");
+
+                    b.ToTable("ReadingHistories");
                 });
 
             modelBuilder.Entity("WEBCOMIC_FINALPROJECT_.Models.SystemConfig", b =>
@@ -479,6 +783,44 @@ namespace WEBCOMIC_FINALPROJECT_.Migrations
                     b.Navigation("Genre");
                 });
 
+            modelBuilder.Entity("WEBCOMIC_FINALPROJECT_.Models.MangaChapterRating", b =>
+                {
+                    b.HasOne("WEBCOMIC_FINALPROJECT_.Models.Chapter", "Chapter")
+                        .WithMany()
+                        .HasForeignKey("ChapterId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("WEBCOMIC_FINALPROJECT_.Models.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Chapter");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("WEBCOMIC_FINALPROJECT_.Models.MangaComment", b =>
+                {
+                    b.HasOne("WEBCOMIC_FINALPROJECT_.Models.Chapter", "Chapter")
+                        .WithMany()
+                        .HasForeignKey("ChapterId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("WEBCOMIC_FINALPROJECT_.Models.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Chapter");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("WEBCOMIC_FINALPROJECT_.Models.MangaImage", b =>
                 {
                     b.HasOne("WEBCOMIC_FINALPROJECT_.Models.Chapter", "Chapter")
@@ -488,6 +830,104 @@ namespace WEBCOMIC_FINALPROJECT_.Migrations
                         .IsRequired();
 
                     b.Navigation("Chapter");
+                });
+
+            modelBuilder.Entity("WEBCOMIC_FINALPROJECT_.Models.MangaRating", b =>
+                {
+                    b.HasOne("WEBCOMIC_FINALPROJECT_.Models.Manga", "Manga")
+                        .WithMany()
+                        .HasForeignKey("MangaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("WEBCOMIC_FINALPROJECT_.Models.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Manga");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("WEBCOMIC_FINALPROJECT_.Models.Novel", b =>
+                {
+                    b.HasOne("WEBCOMIC_FINALPROJECT_.Models.Genre", "Genre")
+                        .WithMany()
+                        .HasForeignKey("GenreId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Genre");
+                });
+
+            modelBuilder.Entity("WEBCOMIC_FINALPROJECT_.Models.NovelChapter", b =>
+                {
+                    b.HasOne("WEBCOMIC_FINALPROJECT_.Models.Novel", "Novel")
+                        .WithMany("Chapters")
+                        .HasForeignKey("NovelId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Novel");
+                });
+
+            modelBuilder.Entity("WEBCOMIC_FINALPROJECT_.Models.NovelChapterRating", b =>
+                {
+                    b.HasOne("WEBCOMIC_FINALPROJECT_.Models.NovelChapter", "NovelChapter")
+                        .WithMany()
+                        .HasForeignKey("NovelChapterId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("WEBCOMIC_FINALPROJECT_.Models.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("NovelChapter");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("WEBCOMIC_FINALPROJECT_.Models.NovelComment", b =>
+                {
+                    b.HasOne("WEBCOMIC_FINALPROJECT_.Models.NovelChapter", "NovelChapter")
+                        .WithMany()
+                        .HasForeignKey("NovelChapterId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("WEBCOMIC_FINALPROJECT_.Models.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("NovelChapter");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("WEBCOMIC_FINALPROJECT_.Models.NovelRating", b =>
+                {
+                    b.HasOne("WEBCOMIC_FINALPROJECT_.Models.Novel", "Novel")
+                        .WithMany()
+                        .HasForeignKey("NovelId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("WEBCOMIC_FINALPROJECT_.Models.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Novel");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("WEBCOMIC_FINALPROJECT_.Models.QuizHistory", b =>
@@ -501,6 +941,17 @@ namespace WEBCOMIC_FINALPROJECT_.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("WEBCOMIC_FINALPROJECT_.Models.ReadingHistory", b =>
+                {
+                    b.HasOne("WEBCOMIC_FINALPROJECT_.Models.Manga", "Manga")
+                        .WithMany()
+                        .HasForeignKey("MangaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Manga");
+                });
+
             modelBuilder.Entity("WEBCOMIC_FINALPROJECT_.Models.Chapter", b =>
                 {
                     b.Navigation("Images");
@@ -512,6 +963,11 @@ namespace WEBCOMIC_FINALPROJECT_.Migrations
                 });
 
             modelBuilder.Entity("WEBCOMIC_FINALPROJECT_.Models.Manga", b =>
+                {
+                    b.Navigation("Chapters");
+                });
+
+            modelBuilder.Entity("WEBCOMIC_FINALPROJECT_.Models.Novel", b =>
                 {
                     b.Navigation("Chapters");
                 });

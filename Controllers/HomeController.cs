@@ -22,127 +22,81 @@ namespace WEBCOMIC_FINALPROJECT_.Controllers
             _cache = cache;
         }
 
+        // --- TÌM KIẾM ---
         public IActionResult Search(string query)
         {
             return RedirectToAction("Index", new { search = query });
         }
 
+        // --- TRANG CHỦ ---
         public async Task<IActionResult> Index(int page = 1, string search = "")
         {
             int pageSize = 24;
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             const string CacheKey = "LatestMangas";
 
-            // --- 1. LẤY TRUYỆN CHỮ (NOVEL) ---
+            if (userId != null)
+            {
+                ViewBag.History = await _context.ReadingHistories
+                    .Include(h => h.Manga)
+                    .Where(h => h.UserId == userId)
+                    .OrderByDescending(h => h.LastRead)
+                    .Take(4)
+                    .ToListAsync();
+            }
+
             ViewBag.Novels = await _context.Novels
                 .Include(n => n.Genre)
                 .Where(n => n.IsApproved)
                 .OrderByDescending(n => n.Id)
                 .ToListAsync();
 
-            // --- 2. LẤY TRUYỆN TRANH HOT (Dựa trên ViewCount) ---
-            ViewBag.HotMangas = await _context.Mangas
-                .Where(m => m.IsApproved)
-                .OrderByDescending(m => m.ViewCount)
-                .Take(5)
-                .ToListAsync();
-
-            // --- 3. TRUYỆN THEO SỞ THÍCH (Dựa trên thể loại đã đọc gần nhất) ---
-            if (userId != null)
-            {
-                var lastReadGenreId = await _context.ReadingHistories
-                    .Where(h => h.UserId == userId)
-                    .OrderByDescending(h => h.LastRead)
-                    .Select(h => h.Manga.GenreId)
-                    .FirstOrDefaultAsync();
-
-                if (lastReadGenreId != 0)
-                {
-                    ViewBag.Recommended = await _context.Mangas
-                        .Where(m => m.IsApproved && m.GenreId == lastReadGenreId)
-                        .Take(4)
-                        .ToListAsync();
-                }
-            }
-
-            // --- 4. TÌM KIẾM TRUYỆN TRANH ---
+            var queryManga = _context.Mangas.Include(m => m.Genre).Where(m => m.IsApproved);
             if (!string.IsNullOrEmpty(search))
             {
-                var searchQuery = _context.Mangas
-                    .Include(m => m.Genre)
-                    .Where(m => m.IsApproved && m.Title.Contains(search));
-
-                var totalSearch = await searchQuery.CountAsync();
-                var searchResults = await searchQuery
-                    .OrderByDescending(m => m.Id)
-                    .Skip((page - 1) * pageSize)
-                    .Take(pageSize)
-                    .ToListAsync();
-
-                ViewBag.CurrentPage = page;
-                ViewBag.TotalPages = (int)Math.Ceiling((double)totalSearch / pageSize);
-                ViewBag.Search = search;
-
-                return View(searchResults);
+                queryManga = queryManga.Where(m => m.Title.Contains(search));
             }
 
-            // --- 5. HIỂN THỊ DANH SÁCH TRUYỆN TRANH (Trang 1 có Cache) ---
-            if (page == 1)
-            {
-                if (!_cache.TryGetValue(CacheKey, out List<Manga> mangas))
-                {
-                    mangas = await _context.Mangas
-                        .Include(m => m.Genre)
-                        .Where(m => m.IsApproved)
-                        .OrderByDescending(m => m.Id)
-                        .Take(pageSize)
-                        .AsNoTracking()
-                        .ToListAsync();
-
-                    _cache.Set(CacheKey, mangas, TimeSpan.FromMinutes(2));
-                }
-
-                var totalItems = await _context.Mangas.CountAsync(m => m.IsApproved);
-                ViewBag.CurrentPage = 1;
-                ViewBag.TotalPages = (int)Math.Ceiling((double)totalItems / pageSize);
-
-                return View(mangas);
-            }
-
-            // --- 6. PHÂN TRANG CHO TRUYỆN TRANH (Từ trang 2 trở đi) ---
-            var queryAll = _context.Mangas.Include(m => m.Genre).Where(m => m.IsApproved);
-            var totalCount = await queryAll.CountAsync();
-            var pagedMangas = await queryAll
+            var totalItems = await queryManga.CountAsync();
+            var mangas = await queryManga
                 .OrderByDescending(m => m.Id)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
 
             ViewBag.CurrentPage = page;
-            ViewBag.TotalPages = (int)Math.Ceiling((double)totalCount / pageSize);
+            ViewBag.TotalPages = (int)Math.Ceiling((double)totalItems / pageSize);
+            ViewBag.Search = search;
 
-            return View(pagedMangas);
+            return View(mangas);
         }
 
-        // --- TÍNH NĂNG 7: XEM LỊCH SỬ ĐỌC TRUYỆN ---
+        // --- XEM TOÀN BỘ LỊCH SỬ ---
+        [HttpGet]
         public async Task<IActionResult> History()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (userId == null) return RedirectToPage("/Account/Login", new { area = "Identity" });
+            if (string.IsNullOrEmpty(userId)) return RedirectToAction("Login", "Account");
 
-            var history = await _context.ReadingHistories
+            var allHistory = await _context.ReadingHistories
                 .Include(h => h.Manga)
                 .Where(h => h.UserId == userId)
                 .OrderByDescending(h => h.LastRead)
                 .ToListAsync();
 
-            return View(history);
+            return View(allHistory);
         }
 
-        // --- TÍNH NĂNG 8: KÊNH CHAT CHUNG ---
-        public IActionResult CommunityChat()
+        // --- CỘNG ĐỒNG CHAT (Đã sửa theo yêu cầu của bạn) ---
+        public async Task<IActionResult> CommunityChat()
         {
-            return View();
+            var history = await _context.ChatMessages
+                .OrderByDescending(m => m.SentAt) // 1. Lấy tin mới nhất đưa lên đầu để 'Take'
+                .Take(50)                         // 2. Chỉ lấy 50 tin mới nhất đó
+                .OrderBy(m => m.SentAt)           // 3. Sắp xếp lại tăng dần để hiện đúng thứ tự chat
+                .ToListAsync();
+
+            return View(history);
         }
     }
 }

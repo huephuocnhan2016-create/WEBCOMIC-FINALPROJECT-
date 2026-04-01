@@ -1,7 +1,12 @@
-﻿@model IEnumerable<WEBCOMIC_FINALPROJECT_.Models.Manga>
+﻿@using WEBCOMIC_FINALPROJECT_.Models
+@model IEnumerable<WEBCOMIC_FINALPROJECT_.Models.Manga>
+
+@{
+    ViewData["Title"] = "Trang chủ - WebComic";
+}
 
 <div class="container mt-4">
-    @* Hiển thị thông báo lỗi nếu có *@
+    @* --- THÔNG BÁO LỖI --- *@
     @if (TempData["Error"] != null)
     {
         <div class="alert alert-danger alert-dismissible fade show" role="alert">
@@ -10,41 +15,80 @@
         </div>
     }
 
-    <h3 class="mb-3 fw-bold text-uppercase border-bottom border-secondary pb-2 text-warning">Truyện Tranh Mới Cập Nhật</h3>
+    @* --- 1. PHẦN LỊCH SỬ ĐỌC (WIDGET TRÊN CÙNG) --- *@
+    @if (ViewBag.History != null && ((List<ReadingHistory>)ViewBag.History).Any())
+    {
+        <div class="mb-5">
+            <div class="d-flex justify-content-between align-items-center border-bottom border-secondary pb-2 mb-3">
+                <h3 class="mb-0 fw-bold text-uppercase text-info">
+                    <i class="bi bi-clock-history"></i> Vừa xem gần đây
+                </h3>
+                <a asp-action="History" class="text-info text-decoration-none small">Xem tất cả <i class="bi bi-chevron-right"></i></a>
+            </div>
 
-    @* --- DANH SÁCH TRUYỆN TRANH (MANGA) --- *@
+            <div class="row row-cols-1 row-cols-sm-2 row-cols-md-4 g-3">
+                @foreach (var history in (List<ReadingHistory>)ViewBag.History)
+                {
+                    var m = history.Manga;
+                    if (m != null)
+                    {
+                        <div class="col">
+                            <a asp-controller="MangaManager" asp-action="Details" asp-route-id="@m.Id" class="text-decoration-none">
+                                <div class="card bg-dark text-white border-secondary h-100 history-card-home shadow-sm">
+                                    <div class="row g-0">
+                                        <div class="col-4">
+                                            <img src="@m.ImageUrl" class="img-fluid rounded-start h-100" style="object-fit: cover; min-height: 85px;">
+                                        </div>
+                                        <div class="col-8">
+                                            <div class="card-body p-2">
+                                                <h6 class="card-title text-truncate mb-1" style="font-size: 0.85rem;" title="@m.Title">@m.Title</h6>
+                                                <small class="text-muted d-block" style="font-size: 0.7rem;">
+                                                    <i class="bi bi-calendar3"></i> @history.LastRead.ToString("dd/MM HH:mm")
+                                                </small>
+                                                <div class="mt-1 text-info small" style="font-size: 0.7rem;">Xem tiếp <i class="bi bi-arrow-right"></i></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    }
+
+    @* --- 2. DANH SÁCH TRUYỆN TRANH (MANGA) --- *@
+    <h3 class="mb-3 fw-bold text-uppercase border-bottom border-secondary pb-2 text-warning">
+        <i class="bi bi-fire"></i> Truyện Tranh Mới Cập Nhật
+    </h3>
+
     <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
         @foreach (var item in Model)
         {
             <div class="col">
-                <div class="card h-100 shadow-sm border-0 position-relative overflow-hidden bg-dark text-white">
-                    @* 1. HIỂN THỊ NHÃN VIP *@
+                <div class="card h-100 shadow-sm border-0 position-relative overflow-hidden bg-dark text-white manga-main-card">
                     @if (item.IsVipOnly)
                     {
                         <div class="position-absolute top-0 end-0 m-2" style="z-index: 10;">
-                            <span class="badge bg-warning text-dark shadow-sm py-2 px-2">
+                            <span class="badge bg-warning text-dark shadow-sm py-2 px-2 fw-bold">
                                 <i class="bi bi-star-fill"></i> VIP
                             </span>
                         </div>
                     }
 
-                    @* 2. ẢNH BÌA *@
                     <a asp-controller="MangaManager" asp-action="Details" asp-route-id="@item.Id">
                         <img src="@item.ImageUrl" class="card-img-top"
-                             style="height: 320px; object-fit: cover; transition: transform .3s;"
-                             onmouseover="this.style.transform='scale(1.05)'"
-                             onmouseout="this.style.transform='scale(1)'">
+                             style="height: 320px; object-fit: cover; transition: transform .4s;">
                     </a>
 
                     <div class="card-body d-flex flex-column">
                         <h5 class="card-title text-truncate mb-1" title="@item.Title">@item.Title</h5>
-
                         <div class="mb-3">
                             <span class="badge bg-info text-dark">@item.Genre?.Name</span>
                         </div>
-
                         <a asp-controller="MangaManager" asp-action="Details" asp-route-id="@item.Id"
-                           class="btn @(item.IsVipOnly ? "btn-warning" : "btn-primary") mt-auto w-100 fw-bold">
+                           class="btn @(item.IsVipOnly ? "btn-warning" : "btn-primary") mt-auto w-100 fw-bold shadow-sm">
                             @(item.IsVipOnly ? "Đọc truyện VIP" : "Đọc ngay")
                         </a>
                     </div>
@@ -53,13 +97,13 @@
         }
     </div>
 
-    @* --- PHÂN TRANG CHO TRUYỆN TRANH --- *@
+    @* --- PHÂN TRANG --- *@
     @if (ViewBag.TotalPages > 1)
     {
         <nav aria-label="Page navigation" class="mt-5">
-            <ul class="pagination justify-content-center shadow-sm">
+            <ul class="pagination justify-content-center">
                 <li class="page-item @(ViewBag.CurrentPage == 1 ? "disabled" : "")">
-                    <a class="page-link bg-dark text-white border-secondary" asp-action="Index"
+                    <a class="page-link bg-dark text-white border-secondary shadow-sm" asp-action="Index"
                        asp-route-page="@(ViewBag.CurrentPage - 1)"
                        asp-route-search="@ViewBag.Search">Trước</a>
                 </li>
@@ -75,7 +119,7 @@
                 }
 
                 <li class="page-item @(ViewBag.CurrentPage == ViewBag.TotalPages ? "disabled" : "")">
-                    <a class="page-link bg-dark text-white border-secondary" asp-action="Index"
+                    <a class="page-link bg-dark text-white border-secondary shadow-sm" asp-action="Index"
                        asp-route-page="@(ViewBag.CurrentPage + 1)"
                        asp-route-search="@ViewBag.Search">Sau</a>
                 </li>
@@ -83,40 +127,34 @@
         </nav>
     }
 
-    @* --- DANH SÁCH TRUYỆN CHỮ (NOVEL) --- *@
+    @* --- 3. DANH SÁCH TRUYỆN CHỮ (NOVEL) --- *@
     <hr class="my-5 border-secondary" />
-    <h3 class="mt-4 mb-3 fw-bold text-uppercase border-bottom border-secondary pb-2 text-success">Truyện Chữ (Novel) Mới Cập Nhật</h3>
+    <h3 class="mt-4 mb-3 fw-bold text-uppercase border-bottom border-secondary pb-2 text-success">
+        <i class="bi bi-book-half"></i> Truyện Chữ (Novel) Mới Cập Nhật
+    </h3>
 
     <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4 pb-5">
         @if (ViewBag.Novels != null)
         {
-            foreach (var novel in ViewBag.Novels)
+            foreach (var novel in (IEnumerable<Novel>)ViewBag.Novels)
             {
                 <div class="col">
                     <div class="card h-100 shadow-sm border-0 position-relative overflow-hidden bg-dark text-white">
-
                         @if (novel.IsVipOnly)
                         {
                             <div class="position-absolute top-0 end-0 m-2" style="z-index: 10;">
-                                <span class="badge bg-warning text-dark shadow-sm py-2 px-2">
-                                    <i class="bi bi-star-fill"></i> VIP
-                                </span>
+                                <span class="badge bg-warning text-dark py-2 px-2 fw-bold">VIP</span>
                             </div>
                         }
-
                         <a asp-controller="NovelManager" asp-action="Details" asp-route-id="@novel.Id">
                             <img src="@novel.ImageUrl" class="card-img-top" alt="@novel.Title"
-                                 style="height: 320px; object-fit: cover; transition: transform .3s;"
-                                 onmouseover="this.style.transform='scale(1.05)'"
-                                 onmouseout="this.style.transform='scale(1)'">
+                                 style="height: 320px; object-fit: cover; transition: transform .4s;">
                         </a>
                         <div class="card-body d-flex flex-column">
                             <h5 class="card-title text-truncate mb-1" title="@novel.Title">@novel.Title</h5>
-
                             <div class="mb-3">
                                 <span class="badge bg-success text-white">@novel.Genre?.Name</span>
                             </div>
-
                             <a asp-controller="NovelManager" asp-action="Details" asp-route-id="@novel.Id"
                                class="btn @(novel.IsVipOnly ? "btn-warning" : "btn-success") mt-auto w-100 fw-bold">
                                 @(novel.IsVipOnly ? "Đọc truyện VIP" : "Đọc ngay")
@@ -134,3 +172,36 @@
         }
     </div>
 </div>
+
+<style>
+    /* Hiệu ứng cho thẻ Manga chính */
+    .manga-main-card:hover img {
+        transform: scale(1.08);
+    }
+
+    .manga-main-card {
+        transition: box-shadow 0.3s;
+    }
+
+        .manga-main-card:hover {
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5) !important;
+        }
+
+    /* Hiệu ứng cho thẻ Lịch sử */
+    .history-card-home {
+        transition: all 0.3s ease;
+        border-left: 3px solid #0dcaf0 !important;
+    }
+
+        .history-card-home:hover {
+            transform: translateY(-3px);
+            background-color: #2c2c2c !important;
+            border-left: 3px solid #ffc107 !important;
+        }
+
+    /* Custom phân trang */
+    .page-link:hover {
+        background-color: #343a40 !important;
+        color: #ffc107 !important;
+    }
+</style>

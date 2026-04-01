@@ -1,4 +1,5 @@
-﻿@{
+﻿@model IEnumerable<WEBCOMIC_FINALPROJECT_.Models.ChatMessage>
+@{
     ViewData["Title"] = "Cộng đồng MANGA-Z";
 }
 
@@ -9,6 +10,19 @@
         </div>
         <div class="card-body">
             <div id="messagesList" class="mb-3 p-3 rounded" style="height: 400px; overflow-y: auto; background: #1a1a1a; border: 1px solid #333;">
+
+                @* --- PHẦN QUAN TRỌNG: ĐỔ LỊCH SỬ CHAT TỪ DATABASE --- *@
+                @if (Model != null)
+                {
+                    foreach (var msg in Model)
+                    {
+                        <div class="mb-2 p-2 rounded shadow-sm bg-secondary">
+                            <strong class="text-info">@msg.User:</strong>
+                            <span class="text-white">@msg.Message</span>
+                        </div>
+                    }
+                }
+
                 <div class="text-center text-muted small italic">Chào mừng bạn đến với phòng chat!</div>
             </div>
 
@@ -33,32 +47,37 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.min.js"></script>
 
     <script>
-        // 1. Khởi tạo kết nối đến Hub đã khai báo trong Program.cs
         var connection = new signalR.HubConnectionBuilder()
             .withUrl("/chatHub")
             .withAutomaticReconnect()
             .build();
 
-        // 2. Định nghĩa hàm nhận tin nhắn từ Server
+        // 1. Nhận tin nhắn Real-time
         connection.on("ReceiveMessage", function (user, message) {
-            var chatBox = document.getElementById("messagesList");
+            appendMessage(user, message);
+        });
 
+        // Hàm phụ để thêm HTML tin nhắn và tự cuộn
+        function appendMessage(user, message) {
+            var chatBox = document.getElementById("messagesList");
             var msgElement = document.createElement("div");
             msgElement.className = "mb-2 p-2 rounded shadow-sm bg-secondary";
             msgElement.innerHTML = `<strong class="text-info">${user}:</strong> <span class="text-white">${message}</span>`;
-
             chatBox.appendChild(msgElement);
-            chatBox.scrollTop = chatBox.scrollHeight; // Tự động cuộn xuống dưới cùng
-        });
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
 
-        // 3. Bắt đầu kết nối
+        // 2. Bắt đầu kết nối
         connection.start().then(function () {
             console.log("Kết nối SignalR thành công!");
+            // Cuộn xuống cuối cùng sau khi load lịch sử xong
+            var chatBox = document.getElementById("messagesList");
+            chatBox.scrollTop = chatBox.scrollHeight;
         }).catch(function (err) {
             return console.error(err.toString());
         });
 
-        // 4. Xử lý sự kiện nhấn nút Gửi
+        // 3. Gửi tin nhắn
         document.getElementById("sendButton").addEventListener("click", function (event) {
             var user = document.getElementById("userInput").value || "Ẩn danh";
             var message = document.getElementById("messageInput").value;
@@ -67,12 +86,11 @@
                 connection.invoke("SendMessage", user, message).catch(function (err) {
                     return console.error(err.toString());
                 });
-                document.getElementById("messageInput").value = ""; // Xóa ô nhập sau khi gửi
+                document.getElementById("messageInput").value = "";
             }
             event.preventDefault();
         });
 
-        // Gửi bằng phím Enter
         document.getElementById("messageInput").addEventListener("keypress", function (e) {
             if (e.key === 'Enter') {
                 document.getElementById("sendButton").click();

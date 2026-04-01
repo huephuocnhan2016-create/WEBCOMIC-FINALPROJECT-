@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace WEBCOMIC_FINALPROJECT_.Models
 {
@@ -15,8 +16,11 @@ namespace WEBCOMIC_FINALPROJECT_.Models
         public string Description { get; set; }
 
         [Required(ErrorMessage = "Vui lòng nhập URL ảnh bìa")]
-        public string ImageUrl { get; set; }
+        public string? ImageUrl { get; set; }
 
+        [NotMapped]
+        [ValidateNever]
+        public IFormFile? ImageFile { get; set; }
         [Required(ErrorMessage = "Vui lòng chọn thể loại")]
         public int GenreId { get; set; }
 

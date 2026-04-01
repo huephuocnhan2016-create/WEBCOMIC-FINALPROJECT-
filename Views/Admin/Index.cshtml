@@ -1,9 +1,21 @@
 ﻿@model List<WEBCOMIC_FINALPROJECT_.Controllers.UserWithRolesViewModel>
 
 <div class="container mt-4">
-    <h2 class="text-white bg-danger p-3 rounded shadow-sm">
-        <i class="bi bi-people-fill"></i> Quản Lý Thành Viên
-    </h2>
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success">@TempData["Success"]</div>
+    }
+
+    <div class="d-flex justify-content-between align-items-center bg-danger text-white p-3 rounded shadow-sm">
+        <h2 class="mb-0"><i class="bi bi-people-fill"></i> Quản Lý Hệ Thống</h2>
+        <div class="bg-white text-dark p-2 rounded">
+            <form asp-action="UpdateVipConfig" method="post" class="d-flex align-items-center gap-2">
+                <label class="fw-bold mb-0">Điểm đổi VIP:</label>
+                <input type="number" name="points" value="@ViewBag.PointsToVip" class="form-control form-control-sm" style="width: 80px;" />
+                <button type="submit" class="btn btn-sm btn-dark">Cập nhật</button>
+            </form>
+        </div>
+    </div>
 
     <div class="card bg-dark text-white border-secondary mt-3 shadow">
         <div class="table-responsive">
@@ -12,6 +24,7 @@
                     <tr class="text-secondary">
                         <th>Email / Username</th>
                         <th>Điểm Thưởng</th>
+                        <th>Trạng thái VIP</th>
                         <th>Quyền Hiện Tại</th>
                         <th class="text-center">Thay Đổi Quyền</th>
                     </tr>
@@ -30,23 +43,19 @@
                                 </span>
                             </td>
                             <td class="align-middle">
-                                @if (item.Roles.Any())
+                                @if (item.User.IsVip)
                                 {
-                                    @foreach (var role in item.Roles)
-                                    {
-                                        var badgeClass = role switch
-                                        {
-                                            "Admin" => "bg-danger",
-                                            "Moderator" => "bg-warning text-dark",
-                                            "Author" => "bg-success",
-                                            _ => "bg-secondary"
-                                        };
-                                        <span class="badge @badgeClass me-1">@role</span>
-                                    }
+                                    <span class="badge bg-warning text-dark">VIP (Hết hạn: @item.User.VipExpiryDate?.ToShortDateString())</span>
                                 }
                                 else
                                 {
-                                    <span class="badge bg-secondary">No Role</span>
+                                    <span class="text-muted">Thường</span>
+                                }
+                            </td>
+                            <td class="align-middle">
+                                @foreach (var role in item.Roles)
+                                {
+                                    <span class="badge bg-primary">@role</span>
                                 }
                             </td>
                             <td class="align-middle">
@@ -55,7 +64,6 @@
                                     <select name="roleName" class="form-select form-select-sm bg-secondary text-white border-0" style="width: 130px;">
                                         @foreach (var role in ViewBag.AllRoles)
                                         {
-                                            // Tự động chọn quyền đầu tiên của user trong danh sách dropdown
                                             <option value="@role" selected="@(item.Roles.Contains(role))">@role</option>
                                         }
                                     </select>

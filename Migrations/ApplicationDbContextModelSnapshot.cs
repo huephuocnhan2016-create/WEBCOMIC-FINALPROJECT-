@@ -260,6 +260,30 @@ namespace WEBCOMIC_FINALPROJECT_.Migrations
                     b.ToTable("Chapters");
                 });
 
+            modelBuilder.Entity("WEBCOMIC_FINALPROJECT_.Models.ChatMessage", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("SentAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("User")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ChatMessages");
+                });
+
             modelBuilder.Entity("WEBCOMIC_FINALPROJECT_.Models.Genre", b =>
                 {
                     b.Property<int>("Id")
